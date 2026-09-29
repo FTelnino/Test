@@ -1,0 +1,155 @@
+"""The approved public sources. Single source of truth for the corpus.
+
+5 scheme pages on Groww (the assigned source platform) plus 2 regulator pages on
+AMFI. The AMFI pages are required because the Groww scheme pages do not carry
+ELSS lock-in, riskometer, or statement guidance, which PRD 11 criterion 2 asks
+the assistant to answer. PRD 4.1 permits supplementary sources only when they
+are public first-party or regulator URLs; both AMFI pages qualify and both are
+recorded in the source list.
+
+Reachability evidence (recorded during P1, see reports/ingest_decisions.md):
+  groww.in            200, extractable          -> scheme pages
+  hdfcfund.com        403 for every client      -> unusable, bot protection
+  sebi.gov.in         connection timeout        -> unusable from this network
+  amfiindia.com       200, extractable          -> regulator pages
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import List
+
+SOURCES: List["Source"] = [
+    {
+        "scheme": "HDFC Large Cap Fund",
+        "category": "Large Cap",
+        "slug": "hdfc-large-cap-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Equity Fund",
+        "category": "Flexi Cap",
+        "slug": "hdfc-equity-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-equity-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC ELSS Tax Saver Fund",
+        "category": "ELSS",
+        "slug": "hdfc-elss-tax-saver-fund-direct-plan-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth",
+    },
+    {
+        "scheme": "HDFC Small Cap Fund",
+        "category": "Small Cap",
+        "slug": "hdfc-small-cap-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Balanced Advantage Fund",
+        "category": "Balanced Advantage",
+        "slug": "hdfc-balanced-advantage-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-balanced-advantage-fund-direct-growth",
+    },
+]
+
+GENERAL_SOURCES: List["Source"] = [
+    {
+        "scheme": "AMFI Investor Awareness Programme",
+        "category": "Regulator (AMFI)",
+        "slug": "amfi-investor-awareness-presentation",
+        "url": (
+            "https://www.amfiindia.com/Themes/Theme1/downloads/"
+            "InvestorsAwarenessProgrampresentation.pdf"
+        ),
+        "url_type": "regulator",
+        "scope": "general",
+        "content_type": "pdf",
+    },
+    {
+        "scheme": "AMFI Account Statements and CAS",
+        "category": "Regulator (AMFI)",
+        "slug": "amfi-account-statements-cas",
+        "url": (
+            "https://www.amfiindia.com/investor/"
+            "become-mf-distributor?zoneName=InvestorService"
+        ),
+        "url_type": "regulator",
+        "scope": "general",
+        "content_type": "html",
+    },
+]
+
+SCHEME_ALIASES = {
+    "hdfc balanced advantage fund": "HDFC Balanced Advantage Fund",
+    "balanced advantage": "HDFC Balanced Advantage Fund",
+    "hdfc elss tax saver fund": "HDFC ELSS Tax Saver Fund",
+    "hdfc elss": "HDFC ELSS Tax Saver Fund",
+    "elss tax saver": "HDFC ELSS Tax Saver Fund",
+    "tax saver fund": "HDFC ELSS Tax Saver Fund",
+    "hdfc equity fund": "HDFC Equity Fund",
+    "flexi cap": "HDFC Equity Fund",
+    "hdfc large cap fund": "HDFC Large Cap Fund",
+    "large cap": "HDFC Large Cap Fund",
+    "hdfc small cap fund": "HDFC Small Cap Fund",
+    "small cap": "HDFC Small Cap Fund",
+    "elss": "HDFC ELSS Tax Saver Fund",
+}
+
+
+def slugify(value: str) -> str:
+    out = [c.lower() if c.isalnum() else "-" for c in value]
+    text = "".join(out)
+    while "--" in text:
+        text = text.replace("--", "-")
+    return text.strip("-")
+
+
+@dataclass(frozen=True)
+class Source:
+    """One approved public page. Frozen so it cannot be mutated downstream.
+
+    scope="scheme"  one of the 5 HDFC schemes, and is eligible for the
+                    scheme metadata filter used at retrieval time.
+    scope="general" regulator or investor-education material that is not tied to
+                    one scheme. These must stay retrievable even when the user
+                    names a scheme, otherwise "ELSS lock-in" would filter the
+                    corpus down to the Groww ELSS page, which never states the
+                    lock-in. Retrieval therefore filters with
+                    {"$or": [{"scheme": X}, {"scope": "general"}]}.
+    """
+
+    scheme: str
+    category: str
+    url: str
+    slug: str
+    url_type: str = "scheme_page"
+    scope: str = "scheme"
+    content_type: str = "html"
+
+    @property
+    def scheme_slug(self) -> str:
+        return slugify(self.scheme)
+
+    def as_dict(self) -> dict:
+        return {
+            "scheme": self.scheme,
+            "category": self.category,
+            "url": self.url,
+            "slug": self.slug,
+            "url_type": self.url_type,
+            "scope": self.scope,
+            "content_type": self.content_type,
+        }
+
+
+def load_sources() -> List[Source]:
+    """All corpus sources: the 5 scheme pages, then the general regulator pages."""
+    return [Source(**entry) for entry in SOURCES + GENERAL_SOURCES]
+
+
+if __name__ == "__main__":
+    for source in load_sources():
+        print(
+            f"{source.scheme:34} {source.category:22} {source.scope:8} "
+            f"{source.content_type:5} {source.url}"
+        )

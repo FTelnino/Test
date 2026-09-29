@@ -1,0 +1,32 @@
+# P0 + P1 (ingest) dependencies. Later phases append to this file.
+# Install with:  python -m pip install -r requirements.txt
+
+# --- Ingest (P1) ---
+requests==2.32.5
+beautifulsoup4==4.15.0
+lxml==6.1.3
+lxml_html_clean==0.4.5
+trafilatura==2.0.0
+
+# --- PDF fallback, used only if a scheme page is JS-rendered ---
+pypdf==6.19.0
+
+# --- Embedding + vector store (P3) ---
+# Pinned because the index is only reproducible with one model: a re-index under a
+# different encoder would make every stored vector incomparable with the next query.
+sentence-transformers==3.4.1
+chromadb==0.5.23
+# posthog 4+ changed capture() to keyword-only, which chromadb 0.5.23 calls
+# positionally. Without this pin every run prints
+# "Failed to send telemetry event ... capture() takes 1 positional argument but 3
+# were given" twice before the real output. Telemetry is disabled anyway
+# (anonymized_telemetry=False); this just silences the error.
+posthog==3.7.4
+# onnxruntime is deliberately NOT a direct dependency. It exists only to serve
+# Chroma's default embedding function, which this project never uses: vectors
+# always come from rag/embedder.py and are passed explicitly, and the collection
+# is created with embedding_function=None so that is enforced rather than
+# intended. (chromadb still pulls it in transitively; that is harmless.)
+
+# --- Tests ---
+pytest==8.4.2
