@@ -1,6 +1,18 @@
 # P0 + P1 (ingest) dependencies. Later phases append to this file.
 # Install with:  python -m pip install -r requirements.txt
 
+# The CPU-only PyTorch index. This must come first so pip resolves torch from the
+# CPU wheel rather than the default one. On Linux the default torch wheel is the
+# CUDA build: an ~800 MB download plus several GB of NVIDIA CUDA libraries that
+# this project can never use, because it embeds on CPU only. Pinning "+cpu"
+# turned a ~4 GB install into a ~250 MB one on the Render build.
+#
+# Note the 2.8.0+cpu wheels are manylinux_2_28 (glibc 2.28+, e.g. Debian 12,
+# Ubuntu 22.04). An older base image would not resolve them. macOS has no CUDA
+# wheel and no "+cpu" local tag at all, so the markers below give it the plain
+# version -- asking macOS for "+cpu" fails resolution outright.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # --- Ingest (P1) ---
 requests==2.32.5
 beautifulsoup4==4.15.0
@@ -15,6 +27,13 @@ pypdf==6.19.0
 # Pinned because the index is only reproducible with one model: a re-index under a
 # different encoder would make every stored vector incomparable with the next query.
 sentence-transformers==3.4.1
+# Pinned explicitly, not left transitive. Two reasons: the index is only reproducible
+# with one encoder version, and the "+cpu" local tag is what keeps a Linux install off
+# the CUDA build (see the index line above). The same base version on both platforms
+# means the vectors are identical, so an index built on a Mac is readable in
+# production.
+torch==2.8.0+cpu; sys_platform == "linux"
+torch==2.8.0; sys_platform == "darwin"
 chromadb==0.5.23
 # posthog 4+ changed capture() to keyword-only, which chromadb 0.5.23 calls
 # positionally. Without this pin every run prints

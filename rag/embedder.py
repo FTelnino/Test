@@ -25,6 +25,12 @@ import config
 os.environ.setdefault("HF_HOME", str(config.MODEL_CACHE_DIR))
 os.environ.setdefault("SENTENCE_TRANSFORMERS_HOME", str(config.MODEL_CACHE_DIR))
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+# The Rust tokenizer in `transformers` forks a thread pool sized to the core count,
+# and every thread carries its own buffers. On a 512 MB deploy box that is memory
+# spent on nothing, since EMBED_NUM_THREADS already caps the real work at one
+# thread. Must be set before transformers is imported, hence here rather than in
+# _configure_threads().
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 # all-MiniLM-L6-v2 is fixed at 384 dimensions. Checked rather than assumed: a
 # model swap that changed the width would leave the existing index unreadable,
@@ -35,10 +41,39 @@ _model = None
 _load_seconds = 0.0
 
 
+def _configure_threads() -> None:
+    """Keep torch single-threaded on small deploy targets.
+
+    torch defaults to one intra-op thread per core. A Render free web service has
+    0.5 CPU, so those threads do not add throughput -- they oversubscribe a core
+    that is already time-sliced, and each one reserves its own arena, which is
+    memory this project does not have. `EMBED_NUM_THREADS` overrides the guess for
+    a box that really does have cores to spare.
+    """
+    raw = os.environ.get("EMBED_NUM_THREADS")
+    try:
+        threads = int(raw) if raw and raw.strip() else 1
+    except ValueError:
+        threads = 1
+    threads = max(1, threads)
+    try:
+        import torch
+    except ImportError:
+        return
+    torch.set_num_threads(threads)
+    try:
+        torch.set_num_interop_threads(threads)
+    except RuntimeError:
+        # Interop can only be set before the first parallel region, so this is
+        # a no-op once anything has run. Not worth failing a deploy over.
+        pass
+
+
 def get_model():
     """The process-wide SentenceTransformer, loading it on first use."""
     global _model, _load_seconds
     if _model is None:
+        _configure_threads()
         from sentence_transformers import SentenceTransformer
 
         started = time.time()

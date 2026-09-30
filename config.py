@@ -3,6 +3,7 @@ threshold, or model name; everything is read from here."""
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -16,6 +17,12 @@ def _load_env() -> None:
     python-dotenv is absent or no file is found -- the backend then fails loudly
     with a clear message about the missing key, which is the right place for that
     error to surface.
+
+    `override=False` means a variable already present in the real environment
+    wins. That ordering is what makes deployment work: Render, Heroku, and
+    Docker inject secrets as environment variables and ship no .env file at all,
+    so the file is a local-development convenience that must never be able to
+    mask the value the platform actually configured.
     """
     try:
         from dotenv import load_dotenv
@@ -27,6 +34,36 @@ def _load_env() -> None:
 
 
 _load_env()
+
+
+def _env_str(name: str, default: str) -> str:
+    """Read a string setting from the environment, falling back to `default`.
+
+    Empty and whitespace-only values are treated as unset, because a dashboard
+    that renders a text field as blank should leave the default in place rather
+    than configure the empty string. This is the same rule `python-dotenv` applies
+    to a blank line in a .env file.
+    """
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    return raw.strip()
+
+
+def _env_int(name: str, default: int) -> int:
+    """Read an integer setting from the environment, falling back to `default`.
+
+    Falls back rather than raising on a non-numeric value: a bad integer in a
+    platform dashboard should not take down import time for a setting the running
+    service may not even use.
+    """
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return int(raw.strip())
+    except ValueError:
+        return default
 
 # --- Sources -------------------------------------------------------------
 SOURCES_FILE = BASE_DIR / "sources.py"
@@ -90,7 +127,9 @@ MIN_SCORE = 0.40
 #    `content` is ever read. The reasoning trace is the model's scratchpad, not an
 #    answer, and rendering it would put "Need to answer using only context" on
 #    screen and straight into the verifier.
-LLM_BACKEND = "groq"
+# Overridable so a deployment can switch backends from its dashboard without a
+# rebuild; local development leaves it on groq.
+LLM_BACKEND = _env_str("LLM_BACKEND", "groq")
 LLM_TEMPERATURE = 0
 LLM_MAX_TOKENS = 160
 LLM_TIMEOUT = 60
@@ -102,16 +141,20 @@ LLM_MAX_ATTEMPTS = 4
 LLM_BACKOFF_SECONDS = 20.0
 
 # Ollama (offline alternative)
-OLLAMA_BASE_URL = "http://localhost:11434"
-OLLAMA_MODEL = "llama3.2"
+OLLAMA_BASE_URL = _env_str("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = _env_str("OLLAMA_MODEL", "llama3.2")
 
-# Groq. GROQ_MODEL may be set in .env; the model list is account-specific and this
-# key cannot reach the retired llama-3.1-8b-instant. 20b over 120b because 120b
-# emitted U+202F narrow no-break spaces inside "1 year", which is a needless
-# hazard for the verifier's regexes, at 3x the latency for no accuracy gain here.
-GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-GROQ_MODEL = "openai/gpt-oss-20b"
-GROQ_REASONING_EFFORT = "low"
+# Groq. GROQ_MODEL is overridable from the environment or .env; the model list is
+# account-specific, so the default cannot be the only allowed value. This key
+# cannot reach the retired llama-3.1-8b-instant. 20b over 120b because 120b emitted
+# U+202F narrow no-break spaces inside "1 year", which is a needless hazard for the
+# verifier's regexes, at 3x the latency for no accuracy gain here.
+#
+# This was previously hard-coded, which meant a GROQ_MODEL line in .env was parsed,
+# documented in .env.example, and then silently ignored.
+GROQ_BASE_URL = _env_str("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+GROQ_MODEL = _env_str("GROQ_MODEL", "openai/gpt-oss-20b")
+GROQ_REASONING_EFFORT = _env_str("GROQ_REASONING_EFFORT", "low")
 GROQ_KEY_ENV = "GROQ_API_KEY"
 #: Seconds the gate script waits between generations. Not a product setting -- the
 #: product makes one call per user question -- so it lives beside the probe's other

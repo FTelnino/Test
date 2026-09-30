@@ -1,0 +1,81 @@
+# Render blueprint for the HDFC mutual funds FAQ assistant.
+#
+# Deploy with:  render blueprint launch  (or connect the repo in the dashboard)
+# then set GROQ_API_KEY in the service's environment.
+#
+# Two facts drive this file:
+#
+#   1. `data/` is git-ignored on purpose, but Render's filesystem is ephemeral --
+#      it is rebuilt on every deploy. Without the disk below, every cold start
+#      would re-fetch Groww and AMFI and re-embed, which is slow and fragile. The
+#      disk keeps `data/chroma/` (the index) and `data/models/` (the encoder)
+#      across restarts.
+#
+#   2. Memory is the binding constraint, not CPU. Peak RSS serving two questions
+#      was measured at 453 MB against this tier's 512 MB, so MALLOC_ARENA_MAX=1
+#      matters: glibc's default is one malloc arena per core, and those arenas
+#      reserve address space that shows up in RSS. See README "Deploying".
+
+services:
+  - type: web
+    name: hdfc-mf-faq
+    runtime: python
+    plan: free            # 512 MB. See README -- Standard (2 GB) if it OOMs.
+    region: singapore     # nearest to the Groww/AMFI origins; lowers fetch latency
+
+    disk:
+      name: hdfc-mf-faq-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1           # index is 26 MB, encoder 88 MB
+
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
+      set -e
+      # Build the index only on a genuinely cold disk. chroma.sqlite3 is the
+      # collection file Chroma writes first; its presence means an index exists.
+      if [ ! -f data/chroma/chroma.sqlite3 ]; then
+        echo "no index on the disk; building it (first deploy only)"
+        python run_ingest.py
+      else
+        echo "index present on the persistent disk; skipping ingest"
+      fi
+      exec streamlit run app.py \
+        --server.address 0.0.0.0 \
+        --server.port "$PORT" \
+        --server.headless true \
+        --browser.gatherUsageStats false
+
+    healthCheckPath: /_stcore/health
+
+    autoDeploy: false     # deliberate: a redeploy re-validates the index
+
+    envVars:
+      # --- secret, set in the dashboard, never committed ---
+      - key: GROQ_API_KEY
+        sync: false
+
+      # --- model, overridable now that config.py honours it ---
+      # Must match the model every report in reports/ was verified against.
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: LLM_BACKEND
+        value: groq
+
+      # --- memory ---
+      # One malloc arena instead of one-per-core. glibc arenas inflate RSS
+      # materially, and this box has 512 MB. Must be set before the process
+      # starts, which is why it is an env var and not a config.py setting.
+      - key: MALLOC_ARENA_MAX
+        value: "1"
+      # One torch thread, to match the 0.5 CPU this tier actually gives.
+      - key: EMBED_NUM_THREADS
+        value: "1"
+      # Do not phone home from a demo machine.
+      - key: HF_HUB_DISABLE_TELEMETRY
+        value: "1"
+      - key: ANONYMIZED_TELEMETRY
+        value: "False"
+      # Keep HF's cache inside the mounted disk so the 88 MB encoder is not
+      # re-downloaded on every restart.
+      - key: HF_HOME
+        value: /opt/render/project/src/data/models

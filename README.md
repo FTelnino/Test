@@ -145,10 +145,12 @@ OLLAMA_MODEL=llama3.2
 Retrieval, guards, and verification are backend-independent; only the generation
 call changes. The numbers in this README were produced with the Groq backend.
 
-> **Note on `GROQ_MODEL`.** `config.py` pins `GROQ_MODEL = "openai/gpt-oss-20b"`
-> in code and reads `.env` for `GROQ_API_KEY` only. An uncommented
-> `GROQ_MODEL=` line in `.env` is currently **ignored**. This is a known rough
-> edge, listed under [Known limits](#known-limits).
+> **Note on `GROQ_MODEL`.** The default is `openai/gpt-oss-20b`, and that is the model
+> every number in `reports/` was verified against. It is now overridable — an
+> uncommented `GROQ_MODEL=` line in `.env`, or a `GROQ_MODEL` environment variable on
+> Render, both win over the built-in default. If you change it, re-run
+> `python scripts/evaluate.py` before trusting the reports, because the scores were
+> produced by a different model.
 
 ---
 
@@ -419,6 +421,49 @@ Note what a refusal does **not** carry: no source link, no date, because nothing
 retrieved. That absence is the visible signal that the guard fired before the vector
 store was touched.
 
+### Deploying to Render
+
+[`render.yaml`](render.yaml) is a Render blueprint. Connect the repo in the dashboard,
+apply the blueprint, then set `GROQ_API_KEY`. No code changes are needed.
+
+Three things in that file are not obvious:
+
+**A persistent disk is not optional.** `data/` is git-ignored, and Render's filesystem is
+ephemeral — rebuilt on every deploy. Without the disk at `/opt/render/project/src/data`,
+every cold start re-fetches Groww and AMFI and re-embeds the corpus. With it, the
+`startCommand` checks for `data/chroma/chroma.sqlite3` and skips ingest when the index is
+already there.
+
+**Memory is the binding constraint, not CPU.** Measured peak RSS serving two questions:
+
+| | |
+|---|---|
+| bare interpreter | 8 MB |
+| + `torch` | 172 MB |
+| + `sentence_transformers` | 315 MB |
+| + `chromadb` | 352 MB |
+| + `streamlit` | 356 MB |
+| + MiniLM weights | 394 MB |
+| peak, two full answers incl. the LLM call | **453 MB** |
+
+Render's free web service has 512 MB. So the blueprint sets `MALLOC_ARENA_MAX=1` — glibc
+allocates one arena per core by default and those arenas inflate RSS — plus
+`EMBED_NUM_THREADS=1`, because the free tier gives 0.5 CPU and extra torch threads only
+oversubscribe it.
+
+**The `+cpu` torch pin is a Linux-only branch.** `pip install torch` on Linux pulls the
+CUDA build: an ~800 MB wheel plus several GB of NVIDIA libraries this project can never
+use. `requirements.txt` pins `torch==2.8.0+cpu` behind `sys_platform == "linux"` and plain
+`2.8.0` on macOS, because the `+cpu` local tag does not exist for macOS wheels and asking
+for it fails resolution outright. Note the CPU wheels are `manylinux_2_28` (glibc 2.28+).
+
+**If the free tier OOM-kills anyway**, the fix is an ONNX encoder rather than a bigger
+instance. `onnxruntime` is already installed — chromadb pulls it in — and measured
+**+9 MB RSS at import against torch's +152 MB**, which would remove roughly 150 MB.
+The catch is that ONNX vectors are not bit-identical to torch's, so the index would have
+to be re-embedded and `MIN_SCORE` re-calibrated, invalidating the numbers in `reports/`
+until every gate is re-run. That is a real cost, which is why it is not done by default.
+
 ---
 
 ## Repository layout
@@ -432,6 +477,7 @@ store was touched.
 ├── sources.py                    the 7 approved URLs (single source of truth)
 ├── DISCLAIMER.md                 full disclaimer text
 ├── requirements.txt              pinned dependencies
+├── render.yaml                   Render blueprint: free plan, disk, cold-start guard
 ├── .env.example                  key template, no real values
 ├── rag/
 │   ├── loader.py                 [1] fetch, extract, clean
@@ -549,10 +595,10 @@ These are the real limits, stated rather than smoothed over.
     is the truthful outcome — answering it would mean inventing instructions.
     Fixing it needs a source that documents the download flow.
 
-11. **`GROQ_MODEL` in `.env` is ignored.** `config.py` pins the model in code and
-    reads the environment for `GROQ_API_KEY` only, so an uncommented
-    `GROQ_MODEL=` line has no effect. Either make it configurable or drop it from
-    `.env.example`.
+11. **A configured `GROQ_MODEL` invalidates the scores in `reports/`.** It is overridable
+    now, but the checked-in numbers came from `openai/gpt-oss-20b`. Override it and the
+    retrieval and eval figures stop describing your build until `scripts/evaluate.py` is
+    re-run against the new model.
 
 12. **`section` is an inferred keyword label, not a real heading path.** The corpus
     has no document outline, so a chunk can be labelled "Exit load" because that

@@ -1176,6 +1176,54 @@ file that is not there.
 
 ---
 
+## P13 — Render Deployment (free tier)
+
+Not in the PRD. Added because the deliverable is a running app, and a prototype nobody
+can reach has not been demonstrated.
+
+### Two bugs found while deploying
+
+1. **`GROQ_MODEL` in `.env` was silently ignored.** `config.py` hard-coded the model and
+   read the environment for `GROQ_API_KEY` only. This was documented as a known rough
+   edge, which made it defensible — but it meant the key that produces every score in
+   `reports/` could not be pinned anywhere except code, and could not be changed on a
+   host without a rebuild. Both the backend and the model are now environment-overridable
+   (`os.environ` beats `.env`), defaulting to the verified values.
+2. **`torch==2.8.0+cpu` cannot resolve on macOS.** The `+cpu` local tag exists only for
+   Linux wheels. Now split behind `sys_platform` markers, CPU on Linux, plain on macOS.
+
+### Why the numbers moved
+
+The documented 3/6 section-accuracy figure had been corrected in `reports/` by hand, but
+`scripts/evaluate.py` regenerates that report from `data/eval/golden.jsonl` — and the
+`3/5` lived in the golden set's `note`. The next eval silently reverted it. Fixed at the
+source, so it cannot regress again. This is the failure mode the P10 report should have
+been checked for: **a number is only fixed once its generator is fixed.**
+
+### Memory is the binding constraint
+
+Peak RSS serving two questions is 453 MB against Render free's 512 MB. `render.yaml`
+therefore sets `MALLOC_ARENA_MAX=1` (glibc's per-core arenas inflate RSS) and
+`EMBED_NUM_THREADS=1` (the free tier has 0.5 CPU, so extra threads only oversubscribe
+it). `MALLOC_ARENA_MAX` must be an env var rather than a `config.py` setting — glibc
+reads it at startup, so setting it from inside a running process is too late.
+
+Also: `data/` is git-ignored and Render's filesystem is ephemeral, so a 1 GB disk is
+mounted at `data/` and `startCommand` builds the index only when
+`data/chroma/chroma.sqlite3` is absent.
+
+**Gate:** `render.yaml` parses; macOS `pip install --dry-run -r requirements.txt`
+resolves; full suite green; eval still 15/15 on the verified model.
+
+**Known risk, deliberately not pre-empted:** 453 MB is close enough to 512 MB that the
+free tier may still OOM. The fix is an ONNX encoder (`onnxruntime` is already installed
+via chromadb and costs +9 MB at import against torch's +152 MB), but ONNX vectors are not
+bit-identical to torch's, so the index must be re-embedded and `MIN_SCORE` re-calibrated,
+which invalidates the checked-in scores until every gate is re-run. That trade is the
+user's to make, so it is documented in the README rather than taken unilaterally.
+
+---
+
 ## Appendix A — Definition of Done (global)
 
 The prototype is complete when **all** of these hold:
@@ -1223,4 +1271,6 @@ The prototype is complete when **all** of these hold:
 | P8 | `cli.py`, a green eval table, real sample output |
 | P9 | the finished single-screen UI |
 | P10 | every documentation deliverable, accurate |
+| P12 | Stage 7 specified in `architecture.md` §6.9 and PRD §6.7 |
 | P11 | a rehearsed, recorded, offline-capable demo |
+| P13 | `render.yaml` on the free plan, `GROQ_MODEL` overridable without silently invalidating `reports/` |
