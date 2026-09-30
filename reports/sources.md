@@ -2,19 +2,19 @@
 
 Generated 2026-09-27 by `scripts/gen_sources_report.py` from `sources.py`. Do not hand-edit.
 
-7 documents ingested, 0 failed, 101047 characters total.
+7 documents ingested, 0 failed, 101047 characters total, 199 chunks (`table_aware`).
 
 ## Sources
 
-| # | Scheme | Category | Scope | Type | Chars | URL |
-|---|---|---|---|---|---|---|
-| 1 | HDFC Large Cap Fund | Large Cap | scheme | html | 5617 | <https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth> |
-| 2 | HDFC Equity Fund | Flexi Cap | scheme | html | 7999 | <https://groww.in/mutual-funds/hdfc-equity-fund-direct-growth> |
-| 3 | HDFC ELSS Tax Saver Fund | ELSS | scheme | html | 6072 | <https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth> |
-| 4 | HDFC Small Cap Fund | Small Cap | scheme | html | 7897 | <https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth> |
-| 5 | HDFC Balanced Advantage Fund | Balanced Advantage | scheme | html | 28958 | <https://groww.in/mutual-funds/hdfc-balanced-advantage-fund-direct-growth> |
-| 6 | AMFI Investor Awareness Programme | Regulator (AMFI) | general | pdf | 27190 | <https://www.amfiindia.com/Themes/Theme1/downloads/InvestorsAwarenessProgrampresentation.pdf> |
-| 7 | AMFI Account Statements and CAS | Regulator (AMFI) | general | html | 17314 | <https://www.amfiindia.com/investor/become-mf-distributor?zoneName=InvestorService> |
+| # | Scheme | Category | Scope | Type | Fetched | Chars | Chunks | URL |
+|---|---|---|---|---|---|---|---|---|
+| 1 | HDFC Large Cap Fund | Large Cap | scheme | html | 2026-09-27 | 5617 | 11 | <https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth> |
+| 2 | HDFC Equity Fund | Flexi Cap | scheme | html | 2026-09-27 | 7999 | 16 | <https://groww.in/mutual-funds/hdfc-equity-fund-direct-growth> |
+| 3 | HDFC ELSS Tax Saver Fund | ELSS | scheme | html | 2026-09-27 | 6072 | 12 | <https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth> |
+| 4 | HDFC Small Cap Fund | Small Cap | scheme | html | 2026-09-27 | 7897 | 16 | <https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth> |
+| 5 | HDFC Balanced Advantage Fund | Balanced Advantage | scheme | html | 2026-09-27 | 28958 | 53 | <https://groww.in/mutual-funds/hdfc-balanced-advantage-fund-direct-growth> |
+| 6 | AMFI Investor Awareness Programme | Regulator (AMFI) | general | pdf | 2026-09-27 | 27190 | 55 | <https://www.amfiindia.com/Themes/Theme1/downloads/InvestorsAwarenessProgrampresentation.pdf> |
+| 7 | AMFI Account Statements and CAS | Regulator (AMFI) | general | html | 2026-09-27 | 17314 | 36 | <https://www.amfiindia.com/investor/become-mf-distributor?zoneName=InvestorService> |
 
 ## Provenance and rules
 

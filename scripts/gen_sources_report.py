@@ -25,6 +25,16 @@ def main() -> int:
     report = json.loads(report_path.read_text(encoding="utf-8"))
     by_url = {entry["url"]: entry for entry in report["sources"]}
 
+    # Chunk counts come from the chosen strategy's persisted output, which is the
+    # exact chunk set that produced the indexed vectors. Re-running the chunker
+    # here could drift from the index if the splitter changed after ingestion.
+    chunk_counts = {}
+    chunks_path = config.RAW_DIR / f"chunks_{config.CHUNK_STRATEGY}.json"
+    if chunks_path.exists():
+        for chunk in json.loads(chunks_path.read_text(encoding="utf-8")):
+            url = chunk.get("source_url", "")
+            chunk_counts[url] = chunk_counts.get(url, 0) + 1
+
     rows = []
     for source in load_sources():
         entry = by_url.get(source.url, {})
@@ -37,6 +47,7 @@ def main() -> int:
                 "content_type": source.content_type,
                 "fetched_at": entry.get("fetched_at", ""),
                 "chars": entry.get("chars", 0),
+                "chunks": chunk_counts.get(source.url, 0),
                 "text_hash": entry.get("text_hash", "") or "",
             }
         )
@@ -48,17 +59,20 @@ def main() -> int:
         f"from `sources.py`. Do not hand-edit.",
         "",
         f"{report['documents']} documents ingested, {report['failed']} failed, "
-        f"{report['total_chars']} characters total.",
+        f"{report['total_chars']} characters total, "
+        f"{sum(row['chunks'] for row in rows)} chunks "
+        f"(`{config.CHUNK_STRATEGY}`).",
         "",
         "## Sources",
         "",
-        "| # | Scheme | Category | Scope | Type | Chars | URL |",
-        "|---|---|---|---|---|---|---|",
+        "| # | Scheme | Category | Scope | Type | Fetched | Chars | Chunks | URL |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for index, row in enumerate(rows, start=1):
         lines.append(
             f"| {index} | {row['scheme']} | {row['category']} | {row['scope']} | "
-            f"{row['content_type']} | {row['chars']} | <{row['url']}> |"
+            f"{row['content_type']} | {row['fetched_at']} | {row['chars']} | "
+            f"{row['chunks']} | <{row['url']}> |"
         )
     lines += [
         "",
@@ -88,7 +102,7 @@ def main() -> int:
     config.REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     (config.REPORTS_DIR / "sources.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    header = "scheme,category,scope,content_type,fetched_at,chars,text_hash,url"
+    header = "scheme,category,scope,content_type,fetched_at,chars,chunks,text_hash,url"
     csv_lines = [header]
     for row in rows:
         csv_lines.append(
@@ -100,6 +114,7 @@ def main() -> int:
                     row["content_type"],
                     row["fetched_at"],
                     str(row["chars"]),
+                    str(row["chunks"]),
                     row["text_hash"],
                     row["url"],
                 ]

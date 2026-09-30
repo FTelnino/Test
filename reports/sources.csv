@@ -1,8 +1,8 @@
-scheme,category,scope,content_type,fetched_at,chars,text_hash,url
-"HDFC Large Cap Fund","Large Cap",scheme,html,2026-09-27,5617,aa665e1528ec0086,https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth
-"HDFC Equity Fund","Flexi Cap",scheme,html,2026-09-27,7999,d99f2ecfbc926d5c,https://groww.in/mutual-funds/hdfc-equity-fund-direct-growth
-"HDFC ELSS Tax Saver Fund","ELSS",scheme,html,2026-09-27,6072,e82f385f07986f3c,https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth
-"HDFC Small Cap Fund","Small Cap",scheme,html,2026-09-27,7897,e8418fd3852e6b69,https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth
-"HDFC Balanced Advantage Fund","Balanced Advantage",scheme,html,2026-09-27,28958,fb905d83cdb012ed,https://groww.in/mutual-funds/hdfc-balanced-advantage-fund-direct-growth
-"AMFI Investor Awareness Programme","Regulator (AMFI)",general,pdf,2026-09-27,27190,25dcddb3a8ec4755,https://www.amfiindia.com/Themes/Theme1/downloads/InvestorsAwarenessProgrampresentation.pdf
-"AMFI Account Statements and CAS","Regulator (AMFI)",general,html,2026-09-27,17314,d21867cd851c73cb,https://www.amfiindia.com/investor/become-mf-distributor?zoneName=InvestorService
+scheme,category,scope,content_type,fetched_at,chars,chunks,text_hash,url
+"HDFC Large Cap Fund","Large Cap",scheme,html,2026-09-27,5617,11,aa665e1528ec0086,https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth
+"HDFC Equity Fund","Flexi Cap",scheme,html,2026-09-27,7999,16,d99f2ecfbc926d5c,https://groww.in/mutual-funds/hdfc-equity-fund-direct-growth
+"HDFC ELSS Tax Saver Fund","ELSS",scheme,html,2026-09-27,6072,12,e82f385f07986f3c,https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth
+"HDFC Small Cap Fund","Small Cap",scheme,html,2026-09-27,7897,16,e8418fd3852e6b69,https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth
+"HDFC Balanced Advantage Fund","Balanced Advantage",scheme,html,2026-09-27,28958,53,fb905d83cdb012ed,https://groww.in/mutual-funds/hdfc-balanced-advantage-fund-direct-growth
+"AMFI Investor Awareness Programme","Regulator (AMFI)",general,pdf,2026-09-27,27190,55,25dcddb3a8ec4755,https://www.amfiindia.com/Themes/Theme1/downloads/InvestorsAwarenessProgrampresentation.pdf
+"AMFI Account Statements and CAS","Regulator (AMFI)",general,html,2026-09-27,17314,36,d21867cd851c73cb,https://www.amfiindia.com/investor/become-mf-distributor?zoneName=InvestorService

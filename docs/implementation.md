@@ -505,7 +505,7 @@ threshold: a second unrelated question, and the different-AMC case above, which 
 probe that distinguishes a working guard from a broken one.
 
 **Known quality limit, deliberately not fixed here.** Expected-scheme accuracy is 5/5 named
-schemes, but expected-*section* accuracy is 3/5. The expense-ratio and minimum-SIP questions
+schemes, but expected-*section* accuracy is 3/6. The expense-ratio and minimum-SIP questions
 land in the wrong section — usually one section off — because the P2 600-character
 table-aware chunks mix the NAV, AUM, fee, and risk lines of a factsheet table into a single
 embedding. P2 already flagged chunk dilution as a known risk and chose retrieval filtering as
@@ -970,7 +970,7 @@ for that query are Riskometer, AUM, Exit load, AMFI, and a second Exit load — 
 ratio is not among them.** The model refused because the answer genuinely was not in its
 context.
 
-The cause is the P4 section-accuracy limit (3/5) surfacing end-to-end. HDFC Equity Fund's
+The cause is the P4 section-accuracy limit (3/6) surfacing end-to-end. HDFC Equity Fund's
 "Riskometer" chunk captured the whole scheme description, so it repeats the string "HDFC Flexi
 Cap Direct Plan Growth" and wins every query about that scheme; the terse "Expense ratio" chunk
 ranks 6th (0.5581) and falls outside `TOP_K = 5`. Query expansion makes it worse, not better —

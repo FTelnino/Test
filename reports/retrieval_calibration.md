@@ -22,12 +22,17 @@ than refusing, so `search()` returns `[]` when the best surviving hit scores bel
 | What is the boiling point of water at sea level? | out_of_corpus | 0.1875 | — | AMFI Investor Awareness Programme | Riskometer | PASS |
 | How do I change the font size on my iPhone? | out_of_corpus | 0.1239 | — | HDFC Small Cap Fund | NAV and pricing | PASS |
 | What is the expense ratio of Parag Parikh Flexi Cap Fund? | out_of_scope | 0.6386 | — | HDFC ELSS Tax Saver Fund | Expense ratio | not caught by score |
+| What is the exit load on HDFC Flexi Cap Fund? | in_corpus | 0.6797 | HDFC Equity Fund | HDFC Equity Fund | Riskometer | PASS |
+
+The last row is a category alias: "Flexi Cap" is the Groww category of HDFC Equity
+Fund, and `detect_scheme` resolves it to that scheme. It was added in P4 after the
+first run, so the gate counts 10 rows rather than 9.
 
 ## The three populations
 
 | population | n | range | separable by `MIN_SCORE`? |
 |---|---|---|---|
-| in-corpus | 6 | 0.6254–0.7772 | — |
+| in-corpus | 7 | 0.6254–0.7772 | — |
 | out-of-corpus (unrelated domain) | 2 | 0.1239–0.1875 | yes, cleanly |
 | out-of-scope (other AMC, same topic) | 1 | 0.6386–0.6386 | **no** — overlaps in-corpus |
 
@@ -51,15 +56,30 @@ Fund and *manufactured* a confident wrong answer.
 
 ## Scheme and section accuracy
 
-- top hit from the expected scheme: **5/5**
-- top hit from the expected section: **3/5**
+- top hit from the expected scheme: **6/6**
+- top hit from the expected section: **3/6**
 
-Scheme accuracy is what the P4 gate asks for and it is met. Section accuracy is lower,
-and the cause is upstream in P2 rather than in the retriever: the Groww stats line packs
-NAV, 1-day change, minimum SIP, AUM, **expense ratio** and rating into one 600-character
-chunk. The expense-ratio answer *is* in the chunk — it is just outnumbered by NAV numbers,
-so a question about expense ratios matches the `Riskometer` chunk first. Fixing it means
-revisiting the P2 chunk-size decision, not the retrieval code.
+Scheme accuracy is what the P4 gate asks for and it is met, including the alias row.
+Section accuracy is lower, and the cause is upstream in P2 rather than in the
+retriever: the Groww stats line packs NAV, 1-day change, minimum SIP, AUM, **expense
+ratio** and rating into one 600-character chunk. The expense-ratio answer *is* in the
+chunk — it is just outnumbered by NAV numbers, so a question about expense ratios
+matches the `Riskometer` chunk first. Fixing it means revisiting the P2 chunk-size
+decision, not the retrieval code.
+
+The three misses, all of them the same failure of a stats line outranking the fact
+it carries:
+
+| question | asked about | top hit section |
+|---|---|---|
+| What is the expense ratio of HDFC Large Cap Fund? | expense ratio | Riskometer |
+| What is the minimum SIP amount for HDFC Balanced Advantage Fund? | minimum SIP | Exit load |
+| What is the exit load on HDFC Flexi Cap Fund? | category alias → Flexi Cap | Riskometer |
+
+Note that the retriever still returns the right answer in the miss cases: on the alias
+row the `Exit load` chunk is retrieved at **#2** (0.5844), below the stats chunk at
+0.6797. This costs answer *precision in the citation line*, not correctness of the
+answer, because generation sees `RERANK_TOP_N` candidates rather than only the top one.
 
 ## Deduplication effect
 
@@ -74,3 +94,12 @@ revisiting the P2 chunk-size decision, not the retrieval code.
 | What is the boiling point of water at sea level? | 5 | 3 |
 | How do I change the font size on my iPhone? | 5 | 5 |
 | What is the expense ratio of Parag Parikh Flexi Cap Fund? | 5 | 5 |
+| What is the exit load on HDFC Flexi Cap Fund? | 5 | 4 |
+
+## Reproduce
+
+```bash
+python scripts/probe_retrieval.py     # gate: 10/10, scheme 6/6, section 3/6
+```
+
+Offline: reads the committed index and the on-disk embedder, makes no network calls.

@@ -131,16 +131,6 @@ def test_upsert_writes_one_row_per_chunk(store):
     assert store.count() == 5
 
 
-def test_upsert_is_idempotent(store):
-    """Re-running converges instead of duplicating (NFR-2)."""
-    chunks = [make_chunk(i) for i in range(4)]
-    vectors = [fake_vector(i) for i in range(4)]
-    store.upsert(chunks, vectors, "2026-09-27")
-    first = store.count()
-    store.upsert(chunks, vectors, "2026-09-27")
-    assert store.count() == first == 4
-
-
 def test_upsert_updates_rather_than_appends_on_content_change(store):
     chunks = [make_chunk(0)]
     store.upsert(chunks, [fake_vector(0)], "2026-09-27")

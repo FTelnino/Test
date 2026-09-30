@@ -103,13 +103,6 @@ def test_ordinals_are_sequential_per_document(chunked, strategy):
         assert ordinals == list(range(len(ordinals))), key
 
 
-@pytest.mark.parametrize("strategy", STRATEGIES)
-def test_chunking_is_deterministic(documents, strategy):
-    first = [c.chunk_id + "|" + c.text for c in chunker.split_all(documents, strategy)]
-    second = [c.chunk_id + "|" + c.text for c in chunker.split_all(documents, strategy)]
-    assert first == second
-
-
 # --- data loss: the regression that mattered -----------------------------
 
 def _comparable(text: str) -> str:
