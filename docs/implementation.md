@@ -796,6 +796,10 @@ if the demo asks it.
 
 **Create:** `rag/pipeline.py` (add the `Answer` dataclass here or in a shared `rag/types.py`)
 
+**Outcome:** `Answer` lives in `rag/pipeline.py`; no `rag/types.py` was created. A separate
+types module would have held one dataclass, and `pipeline.py` is the only consumer, so
+splitting it would add an import for no gain.
+
 **Reference:** `architecture.md` §7.2
 
 **Tasks**
@@ -1133,6 +1137,42 @@ every number in it came from a real run.
 6. Pre-type the 3 demo questions somewhere visible.
 
 **Done when:** the demo has been run cold, offline, and recorded.
+
+---
+
+## P12 — Spec Completeness Fix (Stage 7 gap)
+
+**Goal:** close the hole P10's own gate should have caught.
+
+P10 ticked "architecture write-up" in `PRD.md` §9 without checking that the write-up
+actually covered every stage the PRD's own flow diagram names. It did not.
+
+**The gap.** `PRD.md`'s §5 diagram ends at `[7] CITATION + UI`. `architecture.md` §6 stopped
+at 6.8 Verifier, so the stage that produces the citation link, the
+`Last updated from sources` line, and the disclaimer — the stage a grader looks at — was
+undocumented in the document §9 calls *"the graded artifact alongside the working demo."*
+P9 had built and tested it; it was simply never written down.
+
+**Tasks**
+
+1. Add `architecture.md` §6.9 Stage 7 — Citation + UI, written against the code rather
+   than from memory: the rank-1 citation rule and its four cases, the `_ingest_report.json`
+   date map and why `Chunk` cannot carry the timestamp, newest-date-wins, the lazy cache,
+   the degrade-never-fail behaviour, the eight-element screen order, and what the stage
+   deliberately does not do.
+2. Add `PRD.md` §6.7 Stage 7 — Citation + UI, as requirements rather than implementation.
+3. Fix PRD §6 subsection ordering: `6.2 Stage 2 — Chunking` had been filed under `6.3` and
+   `6.3 Stage 3 — Embedding` under `6.2`, so the stages ran 1, 3, 2, 4, 5, 6.
+4. Repair stale paths found while editing: §4's repository tree placed `PRD.md`,
+   `architecture.md`, and `sample_qa.md` at the repo root when they live in `docs/` and
+   `reports/`; §17 referenced `config.DISCLAIMER_TEXT`, which does not exist — the real
+   accessor is `config.disclaimer_text()`.
+
+**Gate:** every `*.md`/`*.py` path mentioned in `architecture.md` resolves to a real file;
+PRD §6 runs 1–7 in order; full suite still green.
+
+**Done when:** the graded spec documents all seven stages, and no path in it points at a
+file that is not there.
 
 ---
 

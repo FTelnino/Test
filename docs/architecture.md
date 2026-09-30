@@ -93,14 +93,16 @@ separation is what makes the build reproducible and the query path fast.
 
 ```
 .
-├── PRD.md                      product requirements
-├── architecture.md             this document
+├── docs/
+│   ├── PRD.md                      product requirements
+│   ├── architecture.md             this document
+│   └── implementation.md           phase-by-phase build log
 ├── README.md                   setup, scope, chunking rationale, known limits
-├── DISCLAIMER.md               exact disclaimer text used in UI
+├── DISCLAIMER.md               exact disclaimer text; the UI shows its first line
 ├── requirements.txt            pinned dependencies
 ├── .env.example                keys, if an API LLM is used (no real values)
 ├── run_ingest.py               entrypoint: build the index (one command)
-├── app.py                      Streamlit UI
+├── app.py                      Streamlit UI (§6.9)
 ├── cli.py                      terminal Q&A, used for debugging and sample generation
 ├── config.py                   all tunables + paths
 ├── sources.py                  the approved URLs (single source of truth)
@@ -122,8 +124,9 @@ separation is what makes the build reproducible and the query path fast.
 │   └── eval/                   golden questions + expected behaviour
 ├── reports/
 │   ├── chunking_decision.md    data inspection notes → chosen strategy + rationale
+│   ├── sample_qa.md            deliverable: 5–10 queries with answers + links
 │   └── sources.md / sources.csv  deliverable source list
-└── sample_qa.md                deliverable: 5–10 queries with answers + links
+└── scripts/                    gate probes, evaluator, report generators
 ```
 
 One file per arrow in the diagram. `rag/pipeline.py` holds the ordering and nothing else.
@@ -441,6 +444,92 @@ Runs on the generated string, cheap regex checks, no second LLM call:
 The verifier is what turns "we asked the model nicely" into "the output provably satisfies the
 constraint", and it is a good 30 seconds of the demo.
 
+### 6.9 Stage 7 — Citation + UI (`rag/pipeline.py`, `app.py`)
+
+The last stage of the query path. It has two halves that must not be confused: the
+`Answer` is *assembled* in `pipeline.render()`, and it is *displayed* in `app.py`. The
+UI is a pure renderer and holds no decision logic, which is why the Streamlit screen,
+`cli.py`, and `scripts/evaluate.py` cannot disagree — all three read the same object.
+
+#### 6.9.1 One citation, by rule
+
+`citation_url` is the **rank-1 evidence chunk's** `source_url`, and `None` when there
+is no evidence. A single rule covers both cases the spec cares about:
+
+| case | evidence | result |
+|---|---|---|
+| pre-retrieval refusal (PII, advice, returns, other AMC) | none | `citation_url = None`, nothing cited |
+| `NOT_FOUND` | none | no citation |
+| answered question | present | cites the page the top-ranked chunk came from |
+| LLM outage | present | still cites the page, so the user can read the facts themselves |
+
+The fourth row is why the rule is written against `evidence` rather than against
+`status`. A backend that is down should degrade, not lose the user's ability to find
+the source. Exactly one link is ever rendered (FR-7); the other evidence chunks appear
+in the expander as URLs rather than as competing citations, so the answer has a single
+attributable provenance.
+
+#### 6.9.2 `Last updated from sources`
+
+`Chunk` carries no timestamp and the raw chunk table has no such column, so the mapping
+`source_url -> fetched_at` is read from `data/raw/_ingest_report.json` — the only place
+it survives, since that file is written by the loader at fetch time.
+
+Three properties matter:
+
+- **Read lazily and cached.** `_fetched_at_map()` memoises on first use; it cannot
+  change during a process, so re-reading per question would be a disk hit on the hot
+  path for nothing.
+- **Newest date wins, not the top chunk's date.** `_last_updated()` takes `max()` over
+  every evidence chunk's date. ISO `YYYY-MM-DD` sorts lexicographically, so `max()` on
+  the raw strings is the newest date and the formatting happens once afterwards.
+- **Degrades, never fails.** If the ingest report is missing or unreadable, the map is
+  empty, `last_updated` is `""`, and the pipeline still answers. Losing the date is
+  acceptable; refusing to answer because a date file is corrupt is not.
+
+The date exists to make a stale corpus *visible* rather than silent: an answer reading
+`Last updated from sources: 27 Sep 2026` tells the user how old the evidence is, which
+is the whole defence against a snapshot source set being mistaken for live data.
+
+#### 6.9.3 The screen (FR-14, PRD §7)
+
+One screen, in this order, from `app.py::main()`:
+
+1. `st.set_page_config` → title, then the disclaimer line, in that order, both always
+   visible. The disclaimer is `config.disclaimer_text()`, which reads the **first line**
+   of `DISCLAIMER.md` — the full text lives there, the UI shows its headline, so the
+   copy has one source and cannot drift.
+2. Three example chips from `config.EXAMPLE_QUESTIONS`, each populating the input.
+3. Text input + submit → **one** `pipeline.answer()` call, wrapped in a spinner.
+4. Status line, then the answer. `ANSWERED` renders as markdown; every non-answer
+   status renders via `st.info`, so a refusal cannot be mistaken for a result.
+5. `**Source:**` link, when `citation_url` is set.
+6. `**Last updated from sources:**`, or the literal
+   `not applicable (no source retrieved)` when there is no evidence. Printing the label
+   with a blank value would be worse than saying so.
+7. `Show sources (n)` expander: for each evidence chunk, scheme · section · score, its
+   URL, and its text. This is what makes retrieval visible instead of magical — the
+   claim in the README that the right chunk is often retrieved at rank #2 is checkable
+   by the grader in the expander.
+8. The disclaimer again in the footer.
+
+#### 6.9.4 Startup failure is a message, not a traceback
+
+`warm_runtime()` opens the embedder and the Chroma handle inside `@st.cache_resource`
+(Streamlit re-runs the whole script per interaction, so without the cache the model
+would reload on every keystroke and NFR-1 fails). Any exception there, or a count of 0,
+renders `python run_ingest.py` as an instruction instead of a stack trace — which is the
+first thing a fresh clone hits, since `data/` is git-ignored.
+
+#### 6.9.5 What this stage deliberately does not do
+
+- **No answer post-processing.** Truncation and refusal substitution are §6.8's job.
+  Rendering never edits the text, so what is displayed is what the verifier passed.
+- **No second `pipeline.answer()` call**, no per-widget filtering, no client-side
+  scoring. One question in, one `Answer` out.
+- **No streaming.** `temperature=0` and non-streaming were chosen (D6) for repeatable
+  answers in a recorded demo; the cost is a slower perceived first token.
+
 ---
 
 ## 7. Runtime Flows
@@ -723,10 +812,10 @@ Enough logging to debug a bad answer live, and nothing that could leak PII.
 
 | PRD §9 deliverable | Produced by |
 |---|---|
-| Working prototype | `app.py`, `cli.py`, `run_ingest.py` (+ demo video fallback) |
+| Working prototype | `app.py` (§6.9), `cli.py`, `run_ingest.py` (+ demo video fallback) |
 | Source list | `reports/sources.md`, `reports/sources.csv` from `sources.py` |
 | README | `README.md` — setup, scope, chunking rationale, known limits, disclaimer |
-| Sample Q&A | `sample_qa.md`, generated via `cli.py` |
-| Disclaimer snippet | `DISCLAIMER.md`, referenced by `config.DISCLAIMER_TEXT` |
-| PRD | `PRD.md` |
-| Architecture write-up | this document |
+| Sample Q&A | `reports/sample_qa.md`, generated via `cli.py --sample` |
+| Disclaimer snippet | `DISCLAIMER.md`, first line read by `config.disclaimer_text()` |
+| PRD | `docs/PRD.md` |
+| Architecture write-up | this document (`docs/architecture.md`) |

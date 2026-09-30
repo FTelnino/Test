@@ -193,13 +193,7 @@ Each stage is a separate, inspectable module. Data flows one way.
 - Output: a list of documents, each `{ scheme, category, source_url, text, fetched_at }`.
 - Store raw cleaned text to `data/raw/` so the demo can show what was ingested.
 
-### 6.2 Stage 3 — Embedding
-
-- Model: `sentence-transformers/all-MiniLM-L6-v2` (fast, 384-dim, CPU-friendly).
-- Model is downloaded once and cached locally; batch-embed chunks at ingest time.
-- Same model instance must be used at query time (embeddings must be comparable).
-
-### 6.3 Stage 2 — Chunking Strategy (to be decided by data inspection)
+### 6.2 Stage 2 — Chunking Strategy (to be decided by data inspection)
 
 The strategy is **not** fixed in advance. Inspect the ingested text and record the decision
 in the README. Decision criteria and the expected outcome:
@@ -213,6 +207,12 @@ in the README. Decision criteria and the expected outcome:
 Every chunk carries `scheme`, `category`, `section` (heading path), `source_url`, `chunk_id`.
 Retrieval adds a short `scheme` filter when the user names a scheme (e.g. "ELSS lock-in?" →
 filter to the ELSS scheme), which improves precision noticeably.
+
+### 6.3 Stage 3 — Embedding
+
+- Model: `sentence-transformers/all-MiniLM-L6-v2` (fast, 384-dim, CPU-friendly).
+- Model is downloaded once and cached locally; batch-embed chunks at ingest time.
+- Same model instance must be used at query time (embeddings must be comparable).
 
 ### 6.4 Stage 4 — Vector Store
 
@@ -253,6 +253,24 @@ Pipeline order for every turn: **PII check → intent check → retrieve → gen
 LLM for generation: any small instruct model available to the team (local via Ollama/
 llama.cpp, or a free-tier API). The RAG architecture is identical either way — this is a
 deliberate substitution point, documented in the README.
+
+### 6.7 Stage 7 — Citation + UI
+
+The final stage of the query path. It assembles one result object per turn and renders
+it. See `architecture.md` §6.9 for the implementation.
+
+- **Exactly one citation link** per answer (FR-7), pointing at the page the answer was
+  read from. Never more than one, so provenance is unambiguous.
+- **`Last updated from sources: <date>`** on every answer that retrieved evidence, taken
+  from the fetch date recorded at ingest. This is what makes a snapshot corpus visible
+  rather than silently mistaken for live data.
+- **No evidence, no citation.** A pre-retrieval refusal cites nothing, and the date line
+  reads *not applicable* rather than printing a label with a blank value.
+- **Degradation, not failure.** If generation is unavailable but retrieval succeeded, the
+  answer still cites the page so the user can read the facts themselves.
+- **The UI renders, it does not decide.** No answer post-processing, no second pipeline
+  call, no per-widget filtering. The CLI and the evaluator read the same result object,
+  so the screen and the eval table cannot disagree.
 
 ---
 
