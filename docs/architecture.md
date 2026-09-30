@@ -582,12 +582,13 @@ need tuning after seeing real output; all three are meant to be calibrated again
 | `pipeline` | Each of the six `status` values is reachable and renders the required fields | done (P7) |
 | `cli` | Answer, status, citation, and the `Last updated from sources:` line are all printed; `--sources` dumps chunks | done (P8) |
 | `evaluate` | Every golden row's `expected_status`, `must_contain`, `forbid`, and scheme assertion is checked; the table is written to `reports/eval_results.md` | done (P8) |
+| `app` | The single screen shows the title, disclaimer, 3 examples, input, one citation, the date line, and a sources expander; a missing index renders instructions, not a traceback | done (P9) |
 
-As of P8: **337 unit tests**, in ~6s and fully offline — no test makes a network call. Stage 3
+As of P9: **345 unit tests**, in ~6s and fully offline — no test makes a network call. Stage 3
 adds 14, Stage 4 adds 30, Stage 5 adds 28, P6 adds 114 (78 guard, 36 verifier), P5 adds 26,
-P7 adds 40, P8 adds 21. The live gates are `scripts/probe_retrieval.py`, `probe_guards.py`,
-`probe_generation.py`, `probe_pipeline.py`, and `scripts/evaluate.py`; their reports are in
-`reports/`.
+P7 adds 40, P8 adds 21, P9 adds 8. The live gates are `scripts/probe_retrieval.py`,
+`probe_guards.py`, `probe_generation.py`, `probe_pipeline.py`, and `scripts/evaluate.py`; their
+reports are in `reports/`. The UI is exercised offline through Streamlit's own `AppTest`.
 
 One more property is worth naming, because it is the one that is easiest to assert and hardest
 to achieve. The pipeline's value is its **order**, and order is invisible in a return value: a

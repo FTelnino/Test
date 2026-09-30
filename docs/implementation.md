@@ -1047,6 +1047,47 @@ last-updated line, working sources expander, refusal path for an advice question
 
 **Done when:** all PRD §7 elements are on one screen and the refusal path is demonstrable.
 
+### P9 result (2026-09-29) — completed, gate passed
+
+`app.py`, `streamlit==1.50.0` pinned in `requirements.txt`, and `tests/test_app.py` (8 tests).
+Full suite: **345 passed** in ~6s and fully offline. The gate command starts and serves 200
+with `/_stcore/health` = `ok`. A live pass through the app — real embedder, real index, real
+Groq — returned the answer, the Groww citation, the `Last updated from sources` line, and a
+populated sources expander.
+
+**The screen is deliberately thin, and that is the design.** Every decision already happened in
+`pipeline.answer()`, and `app.py` only renders the `Answer` it returns. That is what keeps the
+CLI, the eval harness, and the UI telling the same story: they call the same one entry point and
+differ only in how they show the result. There is no logic in the UI that could disagree with
+the golden table.
+
+**`@st.cache_resource` is what makes NFR-1 reachable, not a nicety.** Streamlit re-runs the whole
+script on every interaction, so without caching the ~2.5 s embedder load would happen on every
+keystroke and the 8 s budget would be spent reloading a model that did not change. `warm_runtime()`
+caches the two things that are actually heavy — the embedder and the Chroma collection handle —
+and returns the collection count, which doubles as the index-existence check. The generator is
+*not* cached, and the docstring says why: `rag.generator` is stateless HTTP built per call, so a
+cached handle would be a handle to a module. Caching it to satisfy the letter of the task would
+have added a line that does nothing.
+
+**A missing index is instructions, not a traceback.** Task 7's failure mode is the one a reviewer
+hits on a fresh clone, because the corpus and index are git-ignored. The count check runs before
+anything that would touch the store, and an empty index renders the `python run_ingest.py` command
+rather than an exception. A startup failure (model unresolvable, say) is caught the same way and
+shows a message plus the same command. Two tests pin both paths.
+
+**The refusal path is rendered differently on purpose.** An answered question uses `st.markdown`;
+a refusal uses `st.info`, so a refusal cannot be mistaken for an answer at a glance, and the status
+caption reads "Refused — advice" rather than the raw `REFUSED_ADVICE`. A refusal has no date, and
+the screen says "not applicable (no source retrieved)" instead of printing the label with a blank
+after it.
+
+**The tests drive the real render path through Streamlit's `AppTest`**, not a copy of it, with the
+embedder, the collection count, and `pipeline.answer` patched so the suite stays offline. The
+empty-index and startup-failure tests clear `st.cache_resource` first, because `warm_runtime` is
+cached for the life of the process and would otherwise fix the count before the zero case could
+run.
+
 ---
 
 ## P10 — Documentation Deliverables

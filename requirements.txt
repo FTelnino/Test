@@ -30,3 +30,9 @@ posthog==3.7.4
 
 # --- Tests ---
 pytest==8.4.2
+
+# --- UI (P9) ---
+# Streamlit re-runs the whole script on every interaction, so the app caches the
+# embedder and the Chroma client with @st.cache_resource (app.py). Without that,
+# NFR-1's 8 s budget would be spent reloading the model on each keystroke.
+streamlit==1.50.0
