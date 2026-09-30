@@ -3,18 +3,22 @@
 # Deploy with:  render blueprint launch  (or connect the repo in the dashboard)
 # then set GROQ_API_KEY in the service's environment.
 #
-# Two facts drive this file:
+# Three facts drive this file:
 #
-#   1. `data/` is git-ignored on purpose, but Render's filesystem is ephemeral --
-#      it is rebuilt on every deploy. Without the disk below, every cold start
-#      would re-fetch Groww and AMFI and re-embed, which is slow and fragile. The
-#      disk keeps `data/chroma/` (the index) and `data/models/` (the encoder)
-#      across restarts.
+#   1. `data/` is git-ignored, so the index is built during the BUILD, not at
+#      startup. That bakes it into the image and means no disk is required. The
+#      startCommand is then a plain one-liner with no cold-start branch.
 #
-#   2. Memory is the binding constraint, not CPU. Peak RSS serving two questions
+#   2. PYTHON_VERSION is not cosmetic. chroma-hnswlib==0.7.6, pinned
+#      transitively by chromadb==0.5.23, ships no cp313 wheel, and Render's
+#      default is 3.13 -- so without this line the build fails outright.
+#
+#   3. Memory is the binding constraint, not CPU. Peak RSS serving two questions
 #      was measured at 453 MB against this tier's 512 MB, so MALLOC_ARENA_MAX=1
 #      matters: glibc's default is one malloc arena per core, and those arenas
-#      reserve address space that shows up in RSS. See README "Deploying".
+#      reserve address space that shows up in RSS. It has to be an env var --
+#      glibc reads it at process start, so setting it in config.py is too late.
+#      See README "Deploying to Render".
 
 services:
   - type: web
@@ -23,33 +27,24 @@ services:
     plan: free            # 512 MB. See README -- Standard (2 GB) if it OOMs.
     region: singapore     # nearest to the Groww/AMFI origins; lowers fetch latency
 
-    disk:
-      name: hdfc-mf-faq-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1           # index is 26 MB, encoder 88 MB
-
-    buildCommand: pip install -r requirements.txt
-    startCommand: |
-      set -e
-      # Build the index only on a genuinely cold disk. chroma.sqlite3 is the
-      # collection file Chroma writes first; its presence means an index exists.
-      if [ ! -f data/chroma/chroma.sqlite3 ]; then
-        echo "no index on the disk; building it (first deploy only)"
-        python run_ingest.py
-      else
-        echo "index present on the persistent disk; skipping ingest"
-      fi
-      exec streamlit run app.py \
-        --server.address 0.0.0.0 \
-        --server.port "$PORT" \
-        --server.headless true \
-        --browser.gatherUsageStats false
+    # Build the index here, not at startup. data/ is git-ignored, so this bakes
+    # the index into the image: no disk needed, and no re-fetch/re-embed on every
+    # cold start of the free tier. Nothing in run_ingest.py calls the LLM, so the
+    # build does not require GROQ_API_KEY -- only the running app does.
+    buildCommand: pip install -r requirements.txt && python run_ingest.py
+    startCommand: streamlit run app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true --browser.gatherUsageStats false
 
     healthCheckPath: /_stcore/health
 
-    autoDeploy: false     # deliberate: a redeploy re-validates the index
+    autoDeploy: false     # deliberate: a redeploy re-fetches and re-validates the index
 
     envVars:
+      # --- required ---
+      # chroma-hnswlib==0.7.6 (via chromadb==0.5.23) has no cp313 wheel and
+      # Render defaults to 3.13, which fails the build.
+      - key: PYTHON_VERSION
+        value: "3.9.6"
+
       # --- secret, set in the dashboard, never committed ---
       - key: GROQ_API_KEY
         sync: false
@@ -75,7 +70,7 @@ services:
         value: "1"
       - key: ANONYMIZED_TELEMETRY
         value: "False"
-      # Keep HF's cache inside the mounted disk so the 88 MB encoder is not
-      # re-downloaded on every restart.
+      # Must match config.MODEL_CACHE_DIR. Both the build and the app then share
+      # one encoder download -- 88 MB is a real cost to repeat per cold start.
       - key: HF_HOME
         value: /opt/render/project/src/data/models

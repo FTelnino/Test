@@ -423,18 +423,61 @@ store was touched.
 
 ### Deploying to Render
 
-[`render.yaml`](render.yaml) is a Render blueprint. Connect the repo in the dashboard,
-apply the blueprint, then set `GROQ_API_KEY`. No code changes are needed.
+The exact values for the Render dashboard. Set the root directory to **empty** — this
+is a single-repo project, and anything else makes Render look for `render.yaml` inside
+a subdirectory that does not exist.
 
-Three things in that file are not obvious:
+| Field | Value |
+|---|---|
+| Root Directory | *(leave blank)* |
+| Runtime | Python |
+| Build Command | `pip install -r requirements.txt && python run_ingest.py` |
+| Start Command | `streamlit run app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true` |
+| Health Check Path | `/_stcore/health` |
 
-**A persistent disk is not optional.** `data/` is git-ignored, and Render's filesystem is
-ephemeral — rebuilt on every deploy. Without the disk at `/opt/render/project/src/data`,
-every cold start re-fetches Groww and AMFI and re-embeds the corpus. With it, the
-`startCommand` checks for `data/chroma/chroma.sqlite3` and skips ingest when the index is
-already there.
+Environment variables:
 
-**Memory is the binding constraint, not CPU.** Measured peak RSS serving two questions:
+| Key | Value | Notes |
+|---|---|---|
+| `GROQ_API_KEY` | your key | **Secret.** Nothing works without it. |
+| `GROQ_MODEL` | `openai/gpt-oss-20b` | The model every score in `reports/` was measured with. Changing it invalidates those numbers. |
+| `LLM_BACKEND` | `groq` | The default, but explicit is safer. |
+| `MALLOC_ARENA_MAX` | `1` | Memory. glibc allocates one arena per core by default and they inflate RSS. |
+| `EMBED_NUM_THREADS` | `1` | Memory/CPU. The free tier has 0.5 CPU; extra torch threads only oversubscribe it. |
+| `HF_HOME` | `/opt/render/project/src/data/models` | Keeps the 88 MB encoder on the disk instead of re-downloading it on every restart. |
+| `HF_HUB_DISABLE_TELEMETRY` | `1` | Quiet. |
+| `ANONYMIZED_TELEMETRY` | `False` | Streamlit's usage pings. |
+| `PYTHON_VERSION` | `3.9.6` | **Required, not cosmetic.** `chroma-hnswlib==0.7.6`, pinned transitively by `chromadb==0.5.23`, ships no cp313 wheel. Render's current default is 3.13, so leaving this unset fails the build with `No matching distribution found for chroma-hnswlib==0.7.6`. |
+
+`render.yaml` holds the same values as a blueprint, if you would rather apply those
+than paste the fields.
+
+#### The index is built at build time, not at runtime
+
+The build command runs `run_ingest.py`, which fetches the five source pages, chunks them,
+embeds 199 vectors, and writes the index into `data/chroma/`. Measured locally: **27 s**
+(13 s fetch, ~2 s chunk, ~10 s model load, 1.3 s embed). Nothing in that path calls the
+LLM, so the build does not need `GROQ_API_KEY` — only the running app does.
+
+This is why the build command is longer than the usual one-liner. The alternative is
+building the index in the start command on every cold start, which costs a fresh fetch
+and a fresh embed each time the free tier spins down. Build-time is both faster at
+runtime and keeps the failure loud: a broken source page fails the deploy instead of
+failing silently at 3 a.m.
+
+Because `data/` is git-ignored and baked in at build time, **do not attach a persistent
+disk on the free plan** — it would be redundant. The earlier blueprint attached one and
+skipped ingest when `chroma.sqlite3` was present; that was the right shape for a
+runtime-built index, but once the build owns the index the disk only adds cost.
+
+One consequence to be aware of: `data/raw/_ingest_report.json` is baked in too, so the
+**Last updated from sources** date is the build date, not the request date. It updates on
+each deploy, which is the honest behaviour — it reflects when the corpus was actually
+fetched.
+
+#### Memory is the binding constraint, not CPU
+
+Measured peak RSS, serving two questions:
 
 | | |
 |---|---|
@@ -446,23 +489,18 @@ already there.
 | + MiniLM weights | 394 MB |
 | peak, two full answers incl. the LLM call | **453 MB** |
 
-Render's free web service has 512 MB. So the blueprint sets `MALLOC_ARENA_MAX=1` — glibc
-allocates one arena per core by default and those arenas inflate RSS — plus
-`EMBED_NUM_THREADS=1`, because the free tier gives 0.5 CPU and extra torch threads only
-oversubscribe it.
+The free tier has 512 MB, so `MALLOC_ARENA_MAX=1` and `EMBED_NUM_THREADS=1` are load-
+bearing, not tuning. Note `MALLOC_ARENA_MAX` has to be an env var — glibc reads it at
+process start, so setting it from inside `config.py` would be too late to matter.
 
-**The `+cpu` torch pin is a Linux-only branch.** `pip install torch` on Linux pulls the
-CUDA build: an ~800 MB wheel plus several GB of NVIDIA libraries this project can never
-use. `requirements.txt` pins `torch==2.8.0+cpu` behind `sys_platform == "linux"` and plain
-`2.8.0` on macOS, because the `+cpu` local tag does not exist for macOS wheels and asking
-for it fails resolution outright. Note the CPU wheels are `manylinux_2_28` (glibc 2.28+).
+#### If the free tier OOM-kills anyway
 
-**If the free tier OOM-kills anyway**, the fix is an ONNX encoder rather than a bigger
-instance. `onnxruntime` is already installed — chromadb pulls it in — and measured
-**+9 MB RSS at import against torch's +152 MB**, which would remove roughly 150 MB.
-The catch is that ONNX vectors are not bit-identical to torch's, so the index would have
-to be re-embedded and `MIN_SCORE` re-calibrated, invalidating the numbers in `reports/`
-until every gate is re-run. That is a real cost, which is why it is not done by default.
+Move to a bigger instance, or switch the encoder to ONNX. `onnxruntime` is already
+installed — chromadb pulls it in — and measured **+9 MB RSS at import against torch's
++152 MB**, worth roughly 150 MB back. The cost: ONNX vectors are not bit-identical to
+torch's, so the index must be re-embedded and `MIN_SCORE` re-calibrated, which
+invalidates the numbers in `reports/` until every gate is re-run. That trade is worth
+making only if the free tier genuinely will not hold.
 
 ---
 
