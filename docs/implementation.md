@@ -1224,6 +1224,57 @@ user's to make, so it is documented in the README rather than taken unilaterally
 
 ---
 
+## P15 — Corpus expansion to 15 schemes
+
+Not in the PRD. Requested after P14: "generate 10 more different pages from the same
+website source."
+
+### Ten Groww pages added
+
+Candidates were probed first and only reachable, extractable pages were kept — 6 of the
+first 12 guesses 404'd, which is why the slug list is what it is. Added: Mid-Cap
+Opportunities, Value, Liquid, Ultra Short Term, Banking and PSU Debt, Credit Risk,
+Medium Term, Gilt, Nifty Midcap 150 Index, Nifty 100 Index. Chosen to span equity by cap,
+value, and six debt/ gilt categories alongside index tracking, so "expense ratio" and
+"exit load" have both an equity and a debt answer in scope.
+
+Corpus: 7 sources / 199 chunks → **17 sources / 206,885 chars / 407 chunks**.
+
+### A real bug found on the way: the P14 build command was broken
+
+`python run_ingest.py` with no flags prints help and exits **1**. P14 put exactly that
+string in `render.yaml` and the README as the build command, so the deploy would have
+failed. It passed my clean-room check because I had run the three stages *separately*
+there and never executed the literal string. `main()` now defaults to running
+fetch → chunk → index when no stage flag is given.
+
+### Gates, all re-run on the new corpus
+
+| gate | result |
+|---|---|
+| ingest | 17/17 sources, 206,885 chars, all ok |
+| index idempotency | 407 → 407 → 407 |
+| retrieval | 10/10, `MIN_SCORE=0.40` still inside `(0.1491, 0.6254]` |
+| eval | **15/15**, unchanged |
+| pipeline | 6/6 |
+| guards | 49/49 |
+| generation | all constraints held |
+| unit tests | 354 passed (was 352; two new corpus-shape tests) |
+
+`MIN_SCORE` needed no recalibration: the separation window barely moved
+(`+0.2254` below the lowest in-corpus hit). The larger corpus did not narrow it.
+
+### The P4 section-accuracy defect now affects more schemes
+
+Section accuracy is still **3/6**, but the blast radius grew. On HDFC Gilt Fund the
+factual `Expense ratio` chunk ranks **35** (0.5780) behind two Riskometer chunks at
+0.7367 and 0.7126, so expense-ratio questions on the new debt pages return `NOT_FOUND`.
+This is the already-documented P4 defect, not a regression — wider coverage multiplied
+the exposure. Recorded under "P15: wider coverage multiplied this defect" in
+`reports/retrieval_calibration.md`.
+
+---
+
 ## Appendix A — Definition of Done (global)
 
 The prototype is complete when **all** of these hold:

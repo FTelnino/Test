@@ -3,7 +3,7 @@
 Date: 2026-09-27
 Phase: P1 (stage 1, loading)
 Answers: Q1 from `architecture.md` §16, plus two deviations from `implementation.md` P1
-Status: gate passed, 7/7 sources ingested
+Status: gate passed, 7/7 sources ingested (17/17 after P15)
 
 ---
 

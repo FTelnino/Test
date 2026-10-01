@@ -52,7 +52,7 @@ def _answer(question, **over):
 def offline(monkeypatch):
     """Replace the model load, the store, and the pipeline with fakes."""
     monkeypatch.setattr(embedder, "warm_cache", lambda *a, **k: "warmed")
-    monkeypatch.setattr(vectorstore, "count", lambda *a, **k: 199)
+    monkeypatch.setattr(vectorstore, "count", lambda *a, **k: 407)
     monkeypatch.setattr(pipeline, "answer", _answer)
     # The app caches warm_runtime; clear it so each test controls the count.
     st.cache_resource.clear()

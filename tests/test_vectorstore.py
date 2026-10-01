@@ -144,7 +144,7 @@ def test_upsert_updates_rather_than_appends_on_content_change(store):
 
 
 def test_upsert_batches_at_the_configured_size(store, monkeypatch):
-    """199 chunks exceed one batch, so the batching path must actually run."""
+    """407 chunks exceed one batch, so the batching path must actually run."""
     monkeypatch.setattr(config, "CHROMA_BATCH_SIZE", 10)
     chunks = [make_chunk(i) for i in range(35)]
     written = store.upsert(chunks, [fake_vector(i) for i in range(35)], "2026-09-27")

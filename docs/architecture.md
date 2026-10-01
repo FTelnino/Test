@@ -226,7 +226,8 @@ Fallback order if static fetch fails, in priority:
 **Resolved during P1 (see `reports/ingest_decisions.md`).** All 5 Groww pages extract
 cleanly, so fallback 1 held. The Groww pages omit ELSS lock-in, the riskometer scale, and
 statement guidance, so fallback 3 was used: two AMFI pages were added, taking the corpus
-to 7 sources.
+to 7 sources. P15 added 10 further Groww scheme pages for the same reason
+fallback 1 did not suffice -- broader category coverage, now 17 sources.
 
 **Extractor choice is evidence-based, and it is not "longest result wins".** On the same
 page, trafilatura returned 5,841 chars of scheme content with tables preserved as markdown,
@@ -786,7 +787,7 @@ Enough logging to debug a bad answer live, and nothing that could leak PII.
 | FR-13 no return computation | `guards`, `verifier` | unit + golden `RETURNS` case |
 | FR-14 "show sources" expander | `app.py`, `Answer.evidence` | manual demo |
 | NFR-1 ≤ 8 s | caching in `app.py`, budget §7.2 | manual timing |
-| NFR-2 idempotent ingest | `vectorstore.upsert()` | unit: double-run count — **passed**, 199 = 199 |
+| NFR-2 idempotent ingest | `vectorstore.upsert()` | unit: double-run count — **passed**, 407 = 407 |
 | NFR-3 offline after first run | local model cache | **passed**: `HF_HUB_OFFLINE=1` loads the embedder in 0.2s and the index is queryable. The LLM half is still blocked on Ollama (P5) |
 
 | NFR-4 no secrets in repo | `.env` handling | repo review |

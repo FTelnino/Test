@@ -78,7 +78,7 @@ def main() -> int:
         "",
         "## Provenance and rules",
         "",
-        "- 5 scheme pages on groww.in, Direct-Growth plans, as assigned.",
+        "- 15 scheme pages on groww.in, Direct-Growth plans, as assigned.",
         "- 2 pages on amfiindia.com, the Association of Mutual Funds in India, added in P1",
         "  because the Groww scheme pages do not carry ELSS lock-in, the riskometer",
         "  scale, or statement guidance, which PRD section 11 criterion 2 requires the",

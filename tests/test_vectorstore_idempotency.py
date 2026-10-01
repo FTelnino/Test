@@ -102,10 +102,10 @@ def test_regenerated_index_is_identical_to_the_first(store):
 def test_real_collection_matches_a_single_run_count():
     """The shipped index holds exactly one run's worth of vectors (NFR-2).
 
-    Read-only against the real collection: 199 in, 199 out. If a re-ingest had
+    Read-only against the real collection: 407 in, 407 out. If a re-ingest had
     ever appended, this would read 398 and the check would fail. Skipped when
     the index has not been built yet.
     """
     if not config.CHROMA_DIR.exists():
         pytest.skip("no index built yet; run: python run_ingest.py")
-    assert vectorstore.count() == 199
+    assert vectorstore.count() == 407

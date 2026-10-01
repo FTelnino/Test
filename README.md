@@ -36,7 +36,7 @@ answer, the Groww citation, the `Last updated from sources` line, and the
 
 ## What it does
 
-**Scope: one AMC, five schemes, plus regulator general material.**
+**Scope: one AMC, 15 schemes, plus regulator general material.**
 
 | Scheme | Category | Plan |
 |---|---|---|
@@ -56,7 +56,7 @@ level and benchmark, and what a statement of accounts is.
 **Out of scope by design:** NAV, returns, CAGR, fund recommendations, scheme
 comparison, and any non-HDFC AMC.
 
-The corpus is **7 pages / 101,047 characters / 199 chunks**, indexed as 199
+The corpus is **17 pages / 206,885 characters / 407 chunks**, indexed as 407
 384-dimensional vectors. Every number in this README comes from a command in
 this repository; nothing is estimated.
 
@@ -252,14 +252,17 @@ segments up to the size budget.
 ### The measurement that decided it
 
 All three strategies share the same invariants (≤600 chars, 100-char overlap, no
-empty section, content-addressed ids). Against the real 7 documents:
+empty section, content-addressed ids). Against the real 17 documents:
 
 | metric | `recursive` | `section` | **`table_aware`** |
 |---|---|---|---|
-| chunks | 200 | 200 | **199** |
-| table-kind chunks | 0 | 0 | **78** |
-| distinct `section` values | 16 | 16 | **20** |
-| table rows intact | 639/727 (87.9%) | 639/727 (87.9%) | **691/700 (98.7%)** |
+| chunks | 395 | 395 | **407** |
+| mean chars | 522.2 | 522.2 | **513.0** |
+| median chars | 593 | 593 | **551** |
+| min / max chars | 89 / 674 | 89 / 674 | **113 / 668** |
+| table-kind chunks | 0 | 0 | **227** |
+| distinct `section` values | 22 | 22 | **29** |
+| table rows intact | 1477/1714 (86.2%) | 1477/1714 (86.2%) | **1714/1714 (100.0%)** |
 | orphan row fragments | 55 | 55 | **7** |
 | prose fact sentences retained | 272/272 | 272/272 | 272/272 |
 | `validate_chunks()` violations | 0 | 0 | 0 |
@@ -455,7 +458,7 @@ than paste the fields.
 #### The index is built at build time, not at runtime
 
 The build command runs `run_ingest.py`, which fetches the five source pages, chunks them,
-embeds 199 vectors, and writes the index into `data/chroma/`. Measured locally: **27 s**
+embeds 407 vectors, and writes the index into `data/chroma/`. Measured locally: **27 s**
 (13 s fetch, ~2 s chunk, ~10 s model load, 1.3 s embed). Nothing in that path calls the
 LLM, so the build does not need `GROQ_API_KEY` — only the running app does.
 
@@ -492,6 +495,18 @@ Measured peak RSS, serving two questions:
 The free tier has 512 MB, so `MALLOC_ARENA_MAX=1` and `EMBED_NUM_THREADS=1` are load-
 bearing, not tuning. Note `MALLOC_ARENA_MAX` has to be an env var — glibc reads it at
 process start, so setting it from inside `config.py` would be too late to matter.
+
+#### Known defect: the section label on a citation can be wrong
+
+A stats line outranks the fact it sits next to, so the top hit is often `Riskometer`
+rather than the section asked about. Section accuracy is **3/6** on the P4 probe set.
+On the 10 scheme pages added in P15 the same failure is worse in degree: for HDFC Gilt
+Fund the factual `Expense ratio` chunk ranks **35** (0.5780) behind two Riskometer chunks
+(0.7367, 0.7126), so the answer comes back `NOT_FOUND`. Truthful -- generation only sees
+`TOP_K` chunks and none of them carried the ratio -- but unhelpful. The root cause is
+chunking, not retrieval or prompting: the scheme-description block swallows the
+Riskometer section and emits two near-identical high-similarity chunks per scheme. The
+fix is a P2 change, not a wider `TOP_K`.
 
 #### If the free tier OOM-kills anyway
 
@@ -569,7 +584,7 @@ re-run contracts specifically:
   inputs, chunk ids are content-addressed and stable, and the persisted chunk file
   still matches a fresh split.
 - `tests/test_vectorstore_idempotency.py` — re-running ingest converges to the
-  same 199 rows instead of duplicating them.
+  same 407 rows instead of duplicating them.
 
 Gates, each a real run recorded in `reports/`:
 
@@ -589,7 +604,7 @@ These are the real limits, stated rather than smoothed over.
 
 **From the PRD:**
 
-1. **Single AMC, five schemes.** Not a market-wide assistant; Parag Parikh, Mirae,
+1. **Single AMC, 15 schemes.** Not a market-wide assistant; Parag Parikh, Mirae,
    etc. are refused as out of scope.
 2. **Snapshot corpus.** Answers reflect the pages at ingest time, not live data.
    The `Last updated from sources` date is shown on every answer precisely so a
@@ -627,7 +642,7 @@ These are the real limits, stated rather than smoothed over.
 
 10. **One PRD acceptance item is not satisfiable from this corpus.** PRD §11.2 lists
     "how do I download a capital gains statement" among the questions that should
-    return an answer. Grepping all 199 chunks for *download* / *how to get* /
+    return an answer. Grepping all 407 chunks for *download* / *how to get* /
     *how to request* returns zero matches; the AMFI account-statements page explains
     what a statement of accounts *is* and never says how to obtain one. `NOT_FOUND`
     is the truthful outcome — answering it would mean inventing instructions.
@@ -678,7 +693,7 @@ chunk count in [`reports/sources.md`](reports/sources.md) and
 `python scripts/gen_sources_report.py` from `sources.py` and the ingest report, so
 they cannot drift from the corpus. Do not hand-edit them.
 
-- 5 scheme pages on **groww.in** (Direct-Growth plans, as assigned)
+- 15 scheme pages on **groww.in** (Direct-Growth plans, as assigned)
 - 2 pages on **amfiindia.com**, the mutual fund regulator association, added
   because the Groww pages omit the ELSS lock-in, the riskometer scale, and
   statement guidance

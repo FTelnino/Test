@@ -104,15 +104,15 @@ is lossy:
 
 ### Aggregate
 
-| metric | `recursive` | `section` | `table_aware` |
+| metric | `recursive` | `section` | **`table_aware`** |
 |---|---|---|---|
-| chunks | 200 | 200 | 199 |
-| mean chars | 503.6 | 503.6 | 513.6 |
-| median chars | 553.5 | 553.5 | 552.0 |
-| min / max chars | 89 / 663 | 89 / 663 | 154 / 668 |
-| table-kind chunks | 0 | 0 | **78** |
-| distinct `section` values | 16 | 16 | **20** |
-| table rows intact | 639/727 (87.9%) | 639/727 (87.9%) | **691/700 (98.7%)** |
+| chunks | 395 | 395 | **407** |
+| mean chars | 522.2 | 522.2 | **513.0** |
+| median chars | 593 | 593 | **551** |
+| min / max chars | 89 / 674 | 89 / 674 | **113 / 668** |
+| table-kind chunks | 0 | 0 | **227** |
+| distinct `section` values | 22 | 22 | **29** |
+| table rows intact | 1477/1714 (86.2%) | 1477/1714 (86.2%) | **1714/1714 (100.0%)** |
 | orphan row fragments | 55 | 55 | **7** |
 | prose fact sentences retained | 272/272 | 272/272 | 272/272 |
 | `validate_chunks()` violations | 0 | 0 | 0 |
@@ -285,7 +285,7 @@ text plus the incoming segment still fits the budget.
 
 ## 6. Consequence
 
-`config.CHUNK_STRATEGY = "table_aware"`, so P3 indexes 199 chunks (78 of them
+`config.CHUNK_STRATEGY = "table_aware"`, so P3 indexes 407 chunks (227 of them
 `table`-kind, 20 distinct sections) instead of 200 undifferentiated ones.
 
 Expected effect on retrieval:
@@ -294,7 +294,7 @@ Expected effect on retrieval:
   chunk can answer on its own; the 691 holdings rows, which are 90% of the largest
   document, are isolated in `Portfolio holdings` chunks that will not match a fee,
   SIP, or benchmark question.
-- **Better citations.** `section` is a real fact label on 199 of 199 chunks, so
+- **Better citations.** `section` is a real fact label on 407 of 407 chunks, so
   the answer panel can say "Exit load" instead of repeating the scheme name.
 - **Sharper refusal boundary.** Because general AMFI material is chunked as prose
   with its own sections, the P4 `{"$or": [{"scheme": …}, {"scope": "general"}]}`

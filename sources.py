@@ -1,11 +1,18 @@
 """The approved public sources. Single source of truth for the corpus.
 
-5 scheme pages on Groww (the assigned source platform) plus 2 regulator pages on
+15 scheme pages on Groww (the assigned source platform) plus 2 regulator pages on
 AMFI. The AMFI pages are required because the Groww scheme pages do not carry
 ELSS lock-in, riskometer, or statement guidance, which PRD 11 criterion 2 asks
 the assistant to answer. PRD 4.1 permits supplementary sources only when they
 are public first-party or regulator URLs; both AMFI pages qualify and both are
 recorded in the source list.
+
+The 15 Groww pages span the categories the assignment cares about -- equity by
+cap (large, flexi, mid, small), a value fund, balanced advantage, ELSS, index
+tracking, and debt (liquid, ultra short, banking and PSU, credit risk, medium
+term, gilt) -- so "expense ratio", "exit load", and "riskometer" questions have
+both an equity and a debt answer in scope, rather than resolving to the only
+scheme that happens to mention the term.
 
 Reachability evidence (recorded during P1, see reports/ingest_decisions.md):
   groww.in            200, extractable          -> scheme pages
@@ -49,6 +56,66 @@ SOURCES: List["Source"] = [
         "category": "Balanced Advantage",
         "slug": "hdfc-balanced-advantage-fund-direct-growth",
         "url": "https://groww.in/mutual-funds/hdfc-balanced-advantage-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Mid-Cap Opportunities Fund",
+        "category": "Mid Cap",
+        "slug": "hdfc-mid-cap-opportunities-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-mid-cap-opportunities-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Value Fund",
+        "category": "Value",
+        "slug": "hdfc-value-fund-direct-plan-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-value-fund-direct-plan-growth",
+    },
+    {
+        "scheme": "HDFC Liquid Fund",
+        "category": "Liquid",
+        "slug": "hdfc-liquid-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-liquid-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Ultra Short Term Fund",
+        "category": "Ultra Short Duration",
+        "slug": "hdfc-ultra-short-term-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-ultra-short-term-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Banking and PSU Debt Fund",
+        "category": "Banking and PSU Debt",
+        "slug": "hdfc-banking-and-psu-debt-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-banking-and-psu-debt-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Credit Risk Fund",
+        "category": "Credit Risk",
+        "slug": "hdfc-credit-risk-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-credit-risk-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Medium Term Fund",
+        "category": "Medium Term",
+        "slug": "hdfc-medium-term-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-medium-term-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Gilt Fund",
+        "category": "Gilt",
+        "slug": "hdfc-gilt-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-gilt-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Nifty Midcap 150 Index Fund",
+        "category": "Index",
+        "slug": "hdfc-nifty-midcap-150-index-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-nifty-midcap-150-index-fund-direct-growth",
+    },
+    {
+        "scheme": "HDFC Nifty 100 Index Fund",
+        "category": "Index",
+        "slug": "hdfc-nifty-100-index-fund-direct-growth",
+        "url": "https://groww.in/mutual-funds/hdfc-nifty-100-index-fund-direct-growth",
     },
 ]
 
@@ -143,7 +210,7 @@ class Source:
 
 
 def load_sources() -> List[Source]:
-    """All corpus sources: the 5 scheme pages, then the general regulator pages."""
+    """All corpus sources: the 15 scheme pages, then the general regulator pages."""
     return [Source(**entry) for entry in SOURCES + GENERAL_SOURCES]
 
 

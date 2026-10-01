@@ -8,7 +8,7 @@ Two rules make this stage trustworthy:
   with its own model, the stored vectors and the query vectors would come from
   two different encoders and every score would be meaningless.
 * **Writes are keyed by `chunk_id`.** Re-running the ingest converges on the same
-  199 rows instead of appending duplicates (NFR-2).
+  407 rows instead of appending duplicates (NFR-2).
 """
 
 from __future__ import annotations

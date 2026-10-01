@@ -81,6 +81,25 @@ row the `Exit load` chunk is retrieved at **#2** (0.5844), below the stats chunk
 0.6797. This costs answer *precision in the citation line*, not correctness of the
 answer, because generation sees `RERANK_TOP_N` candidates rather than only the top one.
 
+### P15: wider coverage multiplied this defect, it did not create it
+
+Growing the corpus to 15 scheme pages (P15) makes the same failure show up on many more
+schemes, because each new page has its own Riskometer block competing with its own
+factual chunks. Measured on HDFC Gilt Fund, a page added in P15:
+
+| rank | score | section |
+|---|---|---|
+| 1 | 0.7367 | Riskometer |
+| 2 | 0.7126 | Riskometer |
+| 35 | 0.5780 | **Expense ratio** |
+
+So an expense-ratio question on a debt scheme retrieves no factual chunk inside `TOP_K`
+and returns `NOT_FOUND` — truthful given what generation was shown, but unhelpful. The
+same three mitigation candidates as below apply; only the chunking one fixes this class
+rather than individual rows, because the cause is that the scheme-description block
+swallows the Riskometer section and produces two near-duplicate high-similarity chunks
+per scheme.
+
 ## Deduplication effect
 
 | question | raw hits | after dedupe |

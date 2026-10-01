@@ -1,7 +1,7 @@
 """Dump the chunks and their stored vectors to a readable text file.
 
 The index is the one artefact in this project you cannot read by opening it: a
-Chroma collection is binary, and a chunk is only visible as a JSON array of 199
+Chroma collection is binary, and a chunk is only visible as a JSON array of 407
 objects. This writes both in a form a human can actually check, which is the
 point — P2 and P3 both made claims about chunk quality and vector dimensions
 that were only ever verified by a script printing PASS.

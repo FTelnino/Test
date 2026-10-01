@@ -215,14 +215,32 @@ def test_save_raw_writes_text_and_report(tmp_path):
 
 # --- the corpus itself ---------------------------------------------------
 
-def test_corpus_has_the_five_schemes_plus_the_regulator_pages():
+def test_corpus_has_the_fifteen_schemes_plus_the_regulator_pages():
     sources = load_sources()
-    assert len(sources) == 7
+    assert len(sources) == 17
     scheme_scoped = [s for s in sources if s.scope == "scheme"]
     general = [s for s in sources if s.scope == "general"]
-    assert len(scheme_scoped) == 5
+    assert len(scheme_scoped) == 15
     assert len(general) == 2
     assert {s.category for s in general} == {"Regulator (AMFI)"}
+
+
+def test_every_scheme_page_is_on_groww_and_https():
+    """All scheme pages must come from the assigned platform (PRD 4.1)."""
+    for source in load_sources():
+        if source.scope == "scheme":
+            assert source.url.startswith("https://groww.in/mutual-funds/"), source.url
+
+
+def test_source_names_urls_and_slugs_are_unique():
+    """Guards the raw-text filenames: save_raw() writes slugify(scheme) + '.txt',
+    so two schemes that slugify alike would silently overwrite each other."""
+    sources = load_sources()
+    for field in ("scheme", "url"):
+        values = [getattr(s, field) for s in sources]
+        assert len(values) == len(set(values)), f"duplicate {field}"
+    slugs = [slugify(s.scheme) for s in sources]
+    assert len(slugs) == len(set(slugs)), f"slugify collision: {slugs}"
 
 
 def test_every_source_url_is_https():

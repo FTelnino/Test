@@ -168,10 +168,22 @@ def main(argv=None) -> int:
     if args.chunk:
         return run_chunking()
 
-    if not args.fetch_only:
-        parser.print_help()
-        return 1
+    if args.fetch_only:
+        return run_fetching()
 
+    # No stage flag: run every stage in order. This is the deployment path --
+    # render.yaml calls `python run_ingest.py` in the build command, so a bare
+    # invocation has to produce a complete corpus, not print help and exit 1.
+    for stage in (run_fetching, run_chunking, run_indexing):
+        code = stage()
+        if code != 0:
+            print(f"\nFAILED: {stage.__name__} returned {code}; stopping.")
+            return code
+    return 0
+
+
+def run_fetching() -> int:
+    """Stage 1: fetch, extract and clean every approved source page."""
     sources = load_sources()
     print(f"stage 1: loading {len(sources)} sources")
     print(f"extractor: {config.EXTRACTOR} primary, beautifulsoup4 fallback")

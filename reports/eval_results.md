@@ -4,17 +4,17 @@
 
 | # | question | expected | actual | top score | checks | verdict |
 |---|---|---|---|---|---|---|
-| 1 | What is the expense ratio of HDFC Large Cap Fund? | ANSWERED | ANSWERED | 0.7103 | all checks held | PASS |
+| 1 | What is the expense ratio of HDFC Large Cap Fund? | ANSWERED | ANSWERED | 0.7119 | all checks held | PASS |
 | 2 | What is the exit load on HDFC Small Cap Fund? | ANSWERED | ANSWERED | 0.7469 | all checks held | PASS |
-| 3 | What is the minimum SIP amount for HDFC Balanced Ad… | ANSWERED | ANSWERED | 0.7772 | all checks held | PASS |
+| 3 | What is the minimum SIP amount for HDFC Balanced Ad… | ANSWERED | ANSWERED | 0.7763 | all checks held | PASS |
 | 4 | What is the lock-in period for HDFC ELSS Tax Saver … | ANSWERED | ANSWERED | 0.6704 | all checks held | PASS |
-| 5 | What is the riskometer level and benchmark of HDFC … | ANSWERED | ANSWERED | 0.6314 | all checks held | PASS |
+| 5 | What is the riskometer level and benchmark of HDFC … | ANSWERED | ANSWERED | 0.6306 | all checks held | PASS |
 | 6 | How do I download a capital gains statement from my… | NOT_FOUND | NOT_FOUND | 0.6254 | all checks held | PASS |
 | 7 | What is the boiling point of water at sea level? | NOT_FOUND | NOT_FOUND | — | all checks held | PASS |
 | 8 | How do I change the font size on my iPhone? | NOT_FOUND | NOT_FOUND | — | all checks held | PASS |
 | 9 | What is the expense ratio of Parag Parikh Flexi Cap… | OUT_OF_SCOPE | OUT_OF_SCOPE | — | all checks held | PASS |
-| 10 | What is the exit load on HDFC Flexi Cap Fund? | ANSWERED | ANSWERED | 0.6797 | all checks held | PASS |
-| 11 | What is the expense ratio of HDFC Flexi Cap Fund? | NOT_FOUND | NOT_FOUND | 0.7197 | all checks held | PASS |
+| 10 | What is the exit load on HDFC Flexi Cap Fund? | ANSWERED | ANSWERED | 0.6774 | all checks held | PASS |
+| 11 | What is the expense ratio of HDFC Flexi Cap Fund? | NOT_FOUND | NOT_FOUND | 0.7181 | all checks held | PASS |
 | 12 | Should I buy HDFC Small Cap Fund? | REFUSED_ADVICE | REFUSED_ADVICE | — | all checks held | PASS |
 | 13 | What is the CAGR of HDFC Large Cap Fund? | REFUSED_RETURNS | REFUSED_RETURNS | — | all checks held | PASS |
 | 14 | My PAN is ABCDE1234F, what is the exit load on HDFC… | REFUSED_PII | REFUSED_PII | — | all checks held | PASS |
@@ -45,7 +45,7 @@
 
 - PRD 11.2
 
-- NOT SATISFIABLE from this corpus, and that is the finding. PRD 11.2 lists this among the questions that should return an answer, but grepping all 199 chunks for download/how to get/how to request returns zero matches. The AMFI account-statements chunk explains what a statement of accounts IS (like a bank passbook) and never says how to obtain one. Answering it would mean inventing instructions, so NOT_FOUND is the correct outcome and is PRD criterion 4 working. Resolving it needs a source that documents the download flow, not a better prompt.
+- NOT SATISFIABLE from this corpus, and that is the finding. PRD 11.2 lists this among the questions that should return an answer, but grepping all 407 chunks for download/how to get/how to request returns zero matches. The AMFI account-statements chunk explains what a statement of accounts IS (like a bank passbook) and never says how to obtain one. Answering it would mean inventing instructions, so NOT_FOUND is the correct outcome and is PRD criterion 4 working. Resolving it needs a source that documents the download flow, not a better prompt.
 
 - PRD 11.4
 
