@@ -1275,6 +1275,47 @@ the exposure. Recorded under "P15: wider coverage multiplied this defect" in
 
 ---
 
+## P16 — Measured effect of P15 (5 pages vs 15 pages)
+
+The P15 eval re-run could not answer this on its own: **none of the 15 golden questions
+name any of the 10 new schemes**, so 15/15 was guaranteed to hold either way. A real
+comparison needs questions that discriminate, so a 17-question set was run against both
+corpora — built from a `git worktree` at P14 (`07bc006`) so the 5-page corpus is exactly
+the committed one, same embedder, same `MIN_SCORE`, same model.
+
+| group | n | 5 pages | 15 pages |
+|---|---|---|---|
+| original 5 schemes | 5 | 5/5 | 5/5 |
+| the 10 new schemes | 10 | 1/10 | **4/10** |
+| out-of-corpus (boiling point, iPhone) | 2 | 0/2 | 0/2 |
+| total | 17 | 6/17 | **9/17** |
+
+No regression on the original five. Out-of-corpus refusals held. Of the 10 new schemes,
+4 became answerable.
+
+**The one apparent regression is a bug fix, not a loss.** On the 5-page corpus,
+"What is the benchmark of HDFC Nifty 100 Index Fund?" returned `ANSWERED`:
+
+> The benchmark of the HDFC Nifty 100 Index Fund is the NIFTY 100 Total Return Index.
+
+That fund was **not in the corpus**. The evidence was rank-1 `HDFC ELSS Tax Saver Fund /
+Benchmark` at 0.7194, whose actual benchmark line reads `NIFTY 500 Total Return Index`.
+The model produced a confident, plausible, wrong answer from a chunk about a different
+fund, and `verify()` passed it — the answer text carries no contradiction to check
+against, only a wrong source. On the 15-page corpus the same question is `NOT_FOUND`,
+because the real page exists and ranks it.
+
+So the honest reading is that 15 pages traded **one hallucinated answer for zero**, which
+is why the raw count moves only 6→9. The false positive was worth more than the
+regression it looks like, and it is the strongest argument in this log for the expansion.
+
+Second finding: **all 6 expense-ratio questions on the new debt/index pages still return
+`NOT_FOUND`** (Gilt, Ultra Short, Mid-Cap, Banking and PSU, Nifty Midcap 150). The P4
+section-ranking defect is not marginal — on these pages the factual chunk lands outside
+`TOP_K` every time. That is now the single highest-value fix in the project: it caps how
+much the expanded corpus can actually be worth.
+
+---
 ## Appendix A — Definition of Done (global)
 
 The prototype is complete when **all** of these hold:
