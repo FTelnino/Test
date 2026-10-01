@@ -31,7 +31,7 @@ services:
     # the index into the image: no disk needed, and no re-fetch/re-embed on every
     # cold start of the free tier. Nothing in run_ingest.py calls the LLM, so the
     # build does not require GROQ_API_KEY -- only the running app does.
-    buildCommand: pip install -r requirements.txt && python run_ingest.py
+    buildCommand: pip install -r requirements.txt && python run_ingest.py --fetch-only && python run_ingest.py --chunk && python run_ingest.py --index
     startCommand: streamlit run app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true --browser.gatherUsageStats false
 
     healthCheckPath: /_stcore/health
