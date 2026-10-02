@@ -252,11 +252,17 @@ INTENT_BACKEND = "rules"
 # --- UI ------------------------------------------------------------------
 DISCLAIMER_FILE = BASE_DIR / "DISCLAIMER.md"
 MAX_ANSWER_SENTENCES = 3
-# EXAMPLE_QUESTIONS used to live here as the UI's example chips. They were removed:
-# all three named only 2 of the 15 schemes, and two of the three were questions
-# about the same fund, so the screen understated what the corpus could answer.
-# If chips come back, derive them from `load_sources()` rather than hard-coding
-# them, so they cannot drift out of sync with the corpus the way these did.
+# The three example chips the UI offers. Fixed on purpose, not randomised: the same
+# three appear on every load, so the screen is reproducible and a screenshot in the
+# docs stays true. (They briefly went missing in P19 — see the P19 note in
+# docs/implementation.md. Two of the three name only HDFC Large Cap and HDFC ELSS
+# Tax Saver, which is a real coverage gap across 15 schemes; if that is ever worth
+# fixing, widen this list rather than randomising it.)
+EXAMPLE_QUESTIONS = [
+    "What is the exit load on HDFC Large Cap Fund?",
+    "What is the minimum SIP for HDFC ELSS Tax Saver Fund?",
+    "What is the lock-in period for HDFC ELSS Tax Saver Fund?",
+]
 
 # --- Paths ---------------------------------------------------------------
 LOG_DIR = BASE_DIR / "logs"

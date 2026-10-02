@@ -152,3 +152,9 @@ def refusal_text(status: str, slug: str = "") -> str:
 
 def disclaimer() -> str:
     return _DISCLAIMER
+
+
+#: The three chips the UI offers. Defined once in `config.py` and re-exported here
+#: because the spec lists them as a prompts.py concern; duplicating them would let
+#: the UI and the eval drift apart.
+EXAMPLE_QUESTIONS = config.EXAMPLE_QUESTIONS

@@ -45,7 +45,7 @@ PRD §2).
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                              PRESENTATION LAYER                              │
 │                     Streamlit single screen (app.py)                         │
-│  welcome line · input box · "Facts-only. No advice." note · answer panel      │
+│  welcome line · 3 fixed chips · input box · "Facts-only. No advice." note     │
 └───────────────────────────────────┬──────────────────────────────────────────┘
                                     │  user question (str)
                                     ▼
@@ -500,7 +500,7 @@ One screen, in this order, from `app.py::main()`:
    visible. The disclaimer is `config.disclaimer_text()`, which reads the **first line**
    of `DISCLAIMER.md` — the full text lives there, the UI shows its headline, so the
    copy has one source and cannot drift.
-2. ~~Three example chips~~ — removed in P19; the input box stands alone.
+2. Three fixed example chips from `config.EXAMPLE_QUESTIONS`, each populating the input.
 3. Text input + submit → **one** `pipeline.answer()` call, wrapped in a spinner.
 4. Status line, then the answer. `ANSWERED` renders as markdown; every non-answer
    status renders via `st.info`, so a refusal cannot be mistaken for a result.
@@ -628,7 +628,7 @@ stage modules. Grouped by concern so a reviewer can see the whole decision surfa
 | Retrieval | `TOP_K`, `RERANK_TOP_N`, `ENABLE_RERANK`, `MIN_SCORE` |
 | Generation | `LLM_BACKEND`, `LLM_MODEL`, `LLM_TEMPERATURE`, `LLM_MAX_TOKENS` |
 | Guards | `PII_PATTERNS`, `INTENT_RULES`, `INTENT_BACKEND` |
-| UI | `DISCLAIMER_TEXT`, `MAX_ANSWER_SENTENCES` |
+| UI | `DISCLAIMER_TEXT`, `EXAMPLE_QUESTIONS`, `MAX_ANSWER_SENTENCES` |
 
 `MIN_SCORE`, `CHUNK_SIZE`, and `MIN_SCORE`-adjacent thresholds are the values most likely to
 need tuning after seeing real output; all three are meant to be calibrated against

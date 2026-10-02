@@ -533,7 +533,7 @@ section-precise citation and the report says so.
    as module constants, with `{link}` placeholders filled from `config`.
 3. `build_context_prompt(evidence) -> str` — each chunk prefixed with its
    `[scheme | section | url]` header, so the model can attribute and never invent a URL.
-4. *(removed in P19 — the UI example chips; see the P19 note below.)*
+4. `EXAMPLE_QUESTIONS` — exactly 3, fixed, not randomised.
 
 **Tasks — generator.py**
 
@@ -659,9 +659,11 @@ classified "Is now a good time to buy?" as `FACTUAL` — it does not contain the
 `architecture.md` §6.7 calls the worst outcome, and the unit tests passed anyway because they
 only used phrasings the rules were written for. Rules for `good/right/bad time to buy`,
 `shall I`, `worth it`, `which is better`, and `tell me which` were added, and
-`test_timing_questions_count_as_advice` now pins them.
-  `test_ordinary_factual_questions_all_pass_the_intent_gate` asserts `FACTUAL` for one
-  question per ingested scheme, so a user naming a real fund cannot open on a refusal.
+`test_timing_questions_count_as_advice` now pins them. All three `config.EXAMPLE_QUESTIONS`
+  are asserted to classify as `FACTUAL`, so the demo cannot open on a refusal, and
+  `test_ordinary_factual_questions_all_pass_the_intent_gate` extends the same check to
+  all fifteen schemes — two of the three chips name one fund, so the chips alone leave
+  thirteen unchecked.
 
 **The LLM intent backend fails closed in both directions.** `INTENT_BACKEND` defaults to
 `"rules"`. Set to `"llm"`, an unreachable backend *and* an unparseable reply both fall back to
@@ -1032,7 +1034,7 @@ refusals on purpose.
    the model reloads on every keystroke and NFR-1 fails.
 2. `st.set_page_config(page_title=..., layout="centered")`; title, then the
    disclaimer line from `config.DISCLAIMER_TEXT`, in that order, both always visible.
-3. ~~Three example question chips~~ — removed in P19; they named 2 of 15 schemes.
+3. Three example question chips from `config.EXAMPLE_QUESTIONS`, each setting the input.
 4. Text input + submit; on submit, one `pipeline.answer()` call, then render `answer.answer`,
    `answer.citation_url` as a single link, and `Last updated from sources: <date>`.
 5. An `st.expander("Show sources")` listing each evidence chunk's scheme, section, and text
@@ -1317,7 +1319,46 @@ section-ranking defect is not marginal — on these pages the factual chunk land
 much the expanded corpus can actually be worth.
 
 ---
-## P19 — Remove the UI example question chips
+## P20 — Restore the UI example chips (P19 reverted)
+
+P19 removed the three example chips on the reasoning that they named only 2 of the 15
+schemes and were therefore stale. That reasoning was sound as a criticism and wrong
+as a decision: the user wanted the chips back, and the requirement is **the same
+three questions on every load**, not a refreshed set. They were never random — they
+were a hardcoded list, which is why removing them was a removal rather than a
+de-randomisation.
+
+So: the removal is reverted, and the coverage work P19 did along the way is kept,
+because that part was a genuine improvement discovered by accident.
+
+- `config.EXAMPLE_QUESTIONS` and the `rag.prompts` re-export are back, unchanged from
+  P0, plus `set_question` in `app.py`.
+- `test_example_questions_are_the_three_approved_ones` and
+  `test_every_example_question_retrieves_evidence` are back.
+- `test_screen_shows_title_disclaimer_examples_and_input` is back, now asserting the
+  chip labels against `config.EXAMPLE_QUESTIONS` rather than against three literals
+  duplicated in the test, so editing the list does not require editing the test.
+- `test_the_three_fixed_example_chips_are_offered` replaces P19's
+  `test_no_stale_example_chips_are_offered`, and pins the property that actually
+  matters: the button list is exactly the three chips plus `Ask`, in that order, every
+  run. This is what would fail if anyone introduced shuffling.
+- `scripts/inspect_index.py` keeps the corpus-derived retrieval probes (15, one per
+  fund). That had nothing to do with the UI and was a real latent crash: it
+  referenced `config.EXAMPLE_QUESTIONS` and would have raised `AttributeError` on its
+  next run, with nothing in the suite executing it.
+
+**What P19 got right and is still true:** two of the three chips name HDFC ELSS Tax
+Saver Fund, so the chips cover 2 of 15 schemes. That remains a real coverage gap in
+what the screen advertises. It is now a documented observation with two corpus-wide
+tests beside it (`test_every_scheme_in_the_corpus_is_retrievable_by_name` and
+`test_ordinary_factual_questions_all_pass_the_intent_gate`) rather than a reason to
+delete the feature. If the gap should be closed, widen the list — do not randomise it.
+
+**Gates:** 360 passed, pyflakes clean.
+
+---
+
+## P19 — Remove the UI example question chips *(reverted by P20; kept for history)*
 
 The three chips were hard-coded in `config.EXAMPLE_QUESTIONS` and had drifted badly:
 they named **2 of the 15 schemes**, and two of the three asked about the same fund. The

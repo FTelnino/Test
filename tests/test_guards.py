@@ -180,14 +180,18 @@ def test_timing_questions_count_as_advice():
         assert guards.classify_intent(query) == guards.ADVICE, query
 
 
-def test_ordinary_factual_questions_all_pass_the_intent_gate():
-    """Questions the UI invites must classify as FACTUAL, not trip the guards.
+def test_config_example_questions_all_pass_the_intent_gate():
+    """These are the three questions the UI offers. If the guard misfiles one, the
+    demo opens with a refusal."""
+    for question in config.EXAMPLE_QUESTIONS:
+        assert guards.classify_intent(question) == guards.FACTUAL, question
 
-    The exact set of three UI example chips is gone, so this is written over the
-    corpus instead: one ordinary factual question per ingested scheme. That is
-    strictly more coverage than the chips gave, and it is the property that
-    actually matters -- a user naming a real fund should not be misfiled as advice
-    or as another AMC's fund.
+
+def test_ordinary_factual_questions_all_pass_the_intent_gate():
+    """The same guarantee for every ingested scheme, not just the three chips.
+
+    Two of the three chips name HDFC ELSS Tax Saver Fund, so the chip test alone
+    leaves thirteen schemes unchecked against the advice and out-of-scope guards.
     """
     from sources import load_sources
 

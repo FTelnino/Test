@@ -65,32 +65,33 @@ def run_app():
     return at
 
 
-def test_screen_shows_title_disclaimer_and_input():
+def test_screen_shows_title_disclaimer_examples_and_input():
     at = run_app()
     assert at.title[0].value == "HDFC Mutual Funds FAQ Assistant"
+    assert [b.label for b in at.button][:3] == config.EXAMPLE_QUESTIONS
     assert at.text_input[0].label
     # The disclaimer appears in the header and again in the footer.
     body = "\n".join(m.value for m in at.markdown)
     assert body.count("Facts-only. No investment advice.") >= 1
 
 
-def test_no_stale_example_chips_are_offered():
-    """The example chips were removed (they named 2 of 15 schemes).
+def test_the_three_fixed_example_chips_are_offered():
+    """The same three chips on every load — fixed, not randomised.
 
-    Kept as a test rather than just deleted because the failure it guards against
-    is silent: hard-coded suggestions quietly stop matching the corpus as it grows.
-
-    The only button left should be the form's submit. Streamlit exposes that as a
-    `Button` too, so the check is on the count and on the labels, not on the
-    element list being empty.
+    P19 removed these and the user wanted them back, which settled the design
+    question: the chips are a stable, known set. Randomising them would make the
+    screen non-reproducible and would invalidate any screenshot in the docs.
     """
     at = run_app()
     labels = [b.label for b in at.button]
-    assert labels == ["Ask"], f"expected only the submit button, found {labels}"
-    assert not hasattr(config, "EXAMPLE_QUESTIONS"), (
-        "config.EXAMPLE_QUESTIONS was removed with the chips; if it is back, the "
-        "UI is offering examples that may not match the corpus again"
-    )
+    assert labels == config.EXAMPLE_QUESTIONS + ["Ask"], labels
+
+
+def test_an_example_chip_fills_the_input_box():
+    at = run_app()
+    at.button[0].click().run()
+    assert not at.exception
+    assert at.text_input[0].value == at.button[0].label
 
 
 def test_asking_a_question_renders_answer_source_and_date():
