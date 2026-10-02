@@ -163,6 +163,22 @@ def scheme_filter(question: str, schemes: list) -> dict:
     return {"$or": [{"scheme": scheme} for scheme in named] + [{"scope": "general"}]}
 
 
+def sample_queries(schemes) -> list:
+    """A spread of retrieval probes, built from the corpus.
+
+    This used to be `config.EXAMPLE_QUESTIONS`, the three chips the UI offered.
+    Those are gone, and hard-coding probes here would drift the same way they did:
+    naming 2 of 15 schemes while the collection held 407 chunks. Deriving one
+    question per scheme means the printed sample always exercises what is actually
+    indexed, and a scheme that cannot be found shows up here rather than nowhere.
+
+    Callers pass scheme-scope chunks only; the AMFI regulator pages are not funds,
+    and "What is the exit load on AMFI Investor Awareness Programme?" is not a
+    question worth printing.
+    """
+    return [f"What is the exit load on {scheme}?" for scheme in schemes]
+
+
 def section_search(out, embedder, records, queries) -> None:
     out.write(f"\n{RULE}\nSAMPLE RETRIEVAL  (cosine score, higher is closer)\n{RULE}\n")
     schemes = sorted({record["metadata"]["scheme"] for record in records})
@@ -223,7 +239,14 @@ def main(argv=None) -> int:
         section_embeddings(out, records, limit, args.all_embeddings)
         section_neighbours(out, records, limit)
         if not args.no_search:
-            section_search(out, embedder, records, config.EXAMPLE_QUESTIONS)
+            scheme_names = sorted(
+                {
+                    record["metadata"]["scheme"]
+                    for record in records
+                    if record["metadata"].get("scope") != "general"
+                }
+            )
+            section_search(out, embedder, records, sample_queries(scheme_names))
 
     size_kb = args.out.stat().st_size / 1024
     print(f"wrote {args.out}  ({size_kb:,.0f} KB, {limit} chunks)")

@@ -24,6 +24,7 @@ from streamlit.testing.v1 import AppTest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+import config  # noqa: E402
 from rag import embedder, pipeline, vectorstore  # noqa: E402
 from rag.pipeline import Answer  # noqa: E402
 from rag.verifier import (  # noqa: E402
@@ -64,20 +65,32 @@ def run_app():
     return at
 
 
-def test_screen_shows_title_disclaimer_examples_and_input():
+def test_screen_shows_title_disclaimer_and_input():
     at = run_app()
     assert at.title[0].value == "HDFC Mutual Funds FAQ Assistant"
-    labels = [b.label for b in at.button]
-    for example in [
-        "What is the exit load on HDFC Large Cap Fund?",
-        "What is the minimum SIP for HDFC ELSS Tax Saver Fund?",
-        "What is the lock-in period for HDFC ELSS Tax Saver Fund?",
-    ]:
-        assert example in labels
     assert at.text_input[0].label
     # The disclaimer appears in the header and again in the footer.
     body = "\n".join(m.value for m in at.markdown)
     assert body.count("Facts-only. No investment advice.") >= 1
+
+
+def test_no_stale_example_chips_are_offered():
+    """The example chips were removed (they named 2 of 15 schemes).
+
+    Kept as a test rather than just deleted because the failure it guards against
+    is silent: hard-coded suggestions quietly stop matching the corpus as it grows.
+
+    The only button left should be the form's submit. Streamlit exposes that as a
+    `Button` too, so the check is on the count and on the labels, not on the
+    element list being empty.
+    """
+    at = run_app()
+    labels = [b.label for b in at.button]
+    assert labels == ["Ask"], f"expected only the submit button, found {labels}"
+    assert not hasattr(config, "EXAMPLE_QUESTIONS"), (
+        "config.EXAMPLE_QUESTIONS was removed with the chips; if it is back, the "
+        "UI is offering examples that may not match the corpus again"
+    )
 
 
 def test_asking_a_question_renders_answer_source_and_date():
@@ -89,13 +102,6 @@ def test_asking_a_question_renders_answer_source_and_date():
     assert "Exit load of 1%" in body
     assert URL in body
     assert "Last updated from sources:" in body and "27 Sep 2026" in body
-
-
-def test_an_example_chip_fills_the_input_box():
-    at = run_app()
-    at.button[0].click().run()
-    assert not at.exception
-    assert at.text_input[0].value == at.button[0].label
 
 
 def test_a_refusal_renders_as_info_not_as_an_answer(monkeypatch):

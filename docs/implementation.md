@@ -533,7 +533,7 @@ section-precise citation and the report says so.
    as module constants, with `{link}` placeholders filled from `config`.
 3. `build_context_prompt(evidence) -> str` — each chunk prefixed with its
    `[scheme | section | url]` header, so the model can attribute and never invent a URL.
-4. `EXAMPLE_QUESTIONS` — exactly 3, drawn from the approved set.
+4. *(removed in P19 — the UI example chips; see the P19 note below.)*
 
 **Tasks — generator.py**
 
@@ -659,8 +659,9 @@ classified "Is now a good time to buy?" as `FACTUAL` — it does not contain the
 `architecture.md` §6.7 calls the worst outcome, and the unit tests passed anyway because they
 only used phrasings the rules were written for. Rules for `good/right/bad time to buy`,
 `shall I`, `worth it`, `which is better`, and `tell me which` were added, and
-`test_timing_questions_count_as_advice` now pins them. All three `config.EXAMPLE_QUESTIONS`
-are asserted to classify as `FACTUAL`, so the demo cannot open on a refusal.
+`test_timing_questions_count_as_advice` now pins them.
+  `test_ordinary_factual_questions_all_pass_the_intent_gate` asserts `FACTUAL` for one
+  question per ingested scheme, so a user naming a real fund cannot open on a refusal.
 
 **The LLM intent backend fails closed in both directions.** `INTENT_BACKEND` defaults to
 `"rules"`. Set to `"llm"`, an unreachable backend *and* an unparseable reply both fall back to
@@ -1031,7 +1032,7 @@ refusals on purpose.
    the model reloads on every keystroke and NFR-1 fails.
 2. `st.set_page_config(page_title=..., layout="centered")`; title, then the
    disclaimer line from `config.DISCLAIMER_TEXT`, in that order, both always visible.
-3. Three example question chips from `config.EXAMPLE_QUESTIONS`, each setting the input.
+3. ~~Three example question chips~~ — removed in P19; they named 2 of 15 schemes.
 4. Text input + submit; on submit, one `pipeline.answer()` call, then render `answer.answer`,
    `answer.citation_url` as a single link, and `Last updated from sources: <date>`.
 5. An `st.expander("Show sources")` listing each evidence chunk's scheme, section, and text
@@ -1316,6 +1317,45 @@ section-ranking defect is not marginal — on these pages the factual chunk land
 much the expanded corpus can actually be worth.
 
 ---
+## P19 — Remove the UI example question chips
+
+The three chips were hard-coded in `config.EXAMPLE_QUESTIONS` and had drifted badly:
+they named **2 of the 15 schemes**, and two of the three asked about the same fund. The
+screen therefore advertised a fraction of what the corpus could answer, and pointed a
+first-time user at the two funds the demo had always used. Since P15 added ten pages
+and P17 made all fifteen reachable, the chips were actively misleading.
+
+Nothing regenerates them. They were a static list, so there was no "refresh" to speak
+of — a new set meant editing `config.py` by hand.
+
+Removed from `app.py`, `config.py` and the `rag.prompts` re-export, along with the
+`set_question` widget callback that existed only to serve them.
+
+**Two things the chips were quietly testing, moved rather than dropped:**
+
+- `test_every_example_question_retrieves_evidence` checked that a question retrieving
+  evidence exists for each chip. That was the only test that would have caught the P17
+  bug — a scheme present in `SOURCES` but invisible to the retriever — because the
+  chips happened not to mention any of the ten broken funds. It is now
+  `test_every_scheme_in_the_corpus_is_retrievable_by_name` and covers all fifteen.
+- `test_config_example_questions_all_pass_the_intent_gate` checked the chips classify
+  `FACTUAL`. It is now written over one question per ingested scheme, which is a
+  strictly larger sample of the property that mattered.
+
+`scripts/inspect_index.py` also referenced the deleted name and would have raised
+`AttributeError` on its next run — nothing in the suite executes that script. Its
+retrieval probes are now derived from the scheme-scope metadata (15 probes, one per
+fund, AMFI pages excluded, since "exit load on AMFI Investor Awareness Programme" is
+not a question worth printing).
+
+If chips return, derive them from `load_sources()` instead of hard-coding: that is the
+whole defect.
+
+**Gates:** 356 passed, pyflakes clean, `inspect_index.py` runs and emits 15 probes,
+UI renders with `['Ask']` as the only button.
+
+---
+
 ## Appendix A — Definition of Done (global)
 
 The prototype is complete when **all** of these hold:

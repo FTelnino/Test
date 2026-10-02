@@ -350,16 +350,6 @@ def warm_runtime() -> int:
     return vectorstore.count()
 
 
-def set_question(text: str) -> None:
-    """Widget callback for an example chip.
-
-    Set in a callback, not inline, because Streamlit forbids assigning to a widget's
-    session key after the widget for that key has been created in the same run. The
-    callback fires before the next run, so the text box picks up the value cleanly.
-    """
-    st.session_state.question = text
-
-
 def status_presentation(status: str):
     """Pill word, explanation and card class for a status, with a safe fallback."""
     return STATUS_PRESENTATION.get(
@@ -468,10 +458,6 @@ def main() -> None:
     if count == 0:
         render_empty_index()
         return
-
-    st.markdown("Ask e.g.")
-    for example in config.EXAMPLE_QUESTIONS:
-        st.button(example, on_click=set_question, args=(example,), use_container_width=True)
 
     if "question" not in st.session_state:
         st.session_state.question = ""

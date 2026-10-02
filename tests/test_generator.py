@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import config
 from rag import generator
 from rag.prompts import (
-    EXAMPLE_QUESTIONS,
     NOT_FOUND_TEXT,
     build_context_prompt,
     system_prompt,
@@ -98,17 +97,23 @@ def test_context_prompt_accepts_bare_chunks_and_hits():
     assert a == b
 
 
-def test_example_questions_are_the_three_approved_ones():
-    assert len(EXAMPLE_QUESTIONS) == 3
-    assert EXAMPLE_QUESTIONS == config.EXAMPLE_QUESTIONS
+def test_every_scheme_in_the_corpus_is_retrievable_by_name():
+    """A question naming any ingested scheme must retrieve evidence.
 
-
-def test_every_example_question_retrieves_evidence():
-    """The demo's three chips must not open on a refusal."""
+    This used to be `test_every_example_question_retrieves_evidence`, which checked
+    the same thing for the three UI example chips. Those chips are gone, and with
+    them the only test that would have caught a scheme being present in `SOURCES`
+    but invisible to the retriever -- the P17 bug, where 10 of 15 pages were
+    unaskable and the chips happened not to mention any of them. Checking the whole
+    corpus is the stronger version of the same guarantee.
+    """
     from rag.retriever import search
+    from sources import load_sources
 
-    for question in EXAMPLE_QUESTIONS:
-        assert search(question), question
+    for source in load_sources():
+        if source.scope == "general":
+            continue
+        assert search(f"What is the exit load on {source.scheme}?"), source.scheme
 
 
 # --- backend configuration ------------------------------------------------

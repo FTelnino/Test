@@ -166,8 +166,7 @@ GROQ_RATE_LIMIT_PAUSE = 8
 # stage code; rag/guards.py compiles them into the (name, regex) pairs it uses.
 # Everything here runs before retrieval, so a false positive blocks a legitimate
 # question while a false negative ships a user's PAN to the LLM. Both directions
-# were checked against the golden set and the example questions in
-# config.EXAMPLE_QUESTIONS; see tests/test_guards.py.
+# were checked against the golden set; see tests/test_guards.py.
 PII_PATTERNS = {
     # 5 letters + 4 digits + 1 letter. Case-insensitive because people type
     # "abcde1234f" as often as they type it correctly.
@@ -253,11 +252,11 @@ INTENT_BACKEND = "rules"
 # --- UI ------------------------------------------------------------------
 DISCLAIMER_FILE = BASE_DIR / "DISCLAIMER.md"
 MAX_ANSWER_SENTENCES = 3
-EXAMPLE_QUESTIONS = [
-    "What is the exit load on HDFC Large Cap Fund?",
-    "What is the minimum SIP for HDFC ELSS Tax Saver Fund?",
-    "What is the lock-in period for HDFC ELSS Tax Saver Fund?",
-]
+# EXAMPLE_QUESTIONS used to live here as the UI's example chips. They were removed:
+# all three named only 2 of the 15 schemes, and two of the three were questions
+# about the same fund, so the screen understated what the corpus could answer.
+# If chips come back, derive them from `load_sources()` rather than hard-coding
+# them, so they cannot drift out of sync with the corpus the way these did.
 
 # --- Paths ---------------------------------------------------------------
 LOG_DIR = BASE_DIR / "logs"

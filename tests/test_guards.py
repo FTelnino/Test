@@ -7,7 +7,7 @@ Two failure directions matter and they are not symmetric:
 
 So the PII tests are written as positive *and* negative pairs — every pattern has
 to fire on a sample and stay quiet on a clean question — and the intent tests
-check that the real example questions in `config.EXAMPLE_QUESTIONS` are not
+check that the ordinary factual questions in `test_guards.py` are not
 misfiled, because those are the questions the demo will actually ask.
 """
 
@@ -180,10 +180,21 @@ def test_timing_questions_count_as_advice():
         assert guards.classify_intent(query) == guards.ADVICE, query
 
 
-def test_config_example_questions_all_pass_the_intent_gate():
-    """These are the three questions the UI offers. If the guard misfiles one, the
-    demo opens with a refusal."""
-    for question in config.EXAMPLE_QUESTIONS:
+def test_ordinary_factual_questions_all_pass_the_intent_gate():
+    """Questions the UI invites must classify as FACTUAL, not trip the guards.
+
+    The exact set of three UI example chips is gone, so this is written over the
+    corpus instead: one ordinary factual question per ingested scheme. That is
+    strictly more coverage than the chips gave, and it is the property that
+    actually matters -- a user naming a real fund should not be misfiled as advice
+    or as another AMC's fund.
+    """
+    from sources import load_sources
+
+    schemes = [s.scheme for s in load_sources() if s.scope != "general"]
+    assert schemes, "expected the corpus to have scheme pages"
+    for scheme in schemes:
+        question = f"What is the exit load on {scheme}?"
         assert guards.classify_intent(question) == guards.FACTUAL, question
 
 
