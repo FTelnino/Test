@@ -65,7 +65,15 @@ THEME = f"""
   }}
 
   /* App frame. Two fixed radial washes over a near-black base read as depth
-     without an image request, so first paint stays fast on a free tier. */
+     without an image request, so first paint stays fast on a free tier.
+     Applied to the container as well as `.stApp` because Streamlit 1.50 paints the
+     scroller element, not `.stApp`, and a rule that loses that race leaves a white
+     band around the content. */
+  .stApp,
+  [data-testid="stAppViewContainer"],
+  [data-testid="stMain"] {{
+    background-color: #0A0C10;
+  }}
   .stApp {{
     background:
       radial-gradient(1100px 620px at 12% -8%, rgba(125, 211, 252, 0.10), transparent 62%),
@@ -74,6 +82,12 @@ THEME = f"""
       #0A0C10;
     color: var(--ink);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }}
+  [data-testid="stAppViewContainer"] {{
+    background:
+      radial-gradient(1100px 620px at 12% -8%, rgba(125, 211, 252, 0.10), transparent 62%),
+      radial-gradient(900px 560px at 92% 4%, rgba(167, 139, 250, 0.09), transparent 58%),
+      #0A0C10;
   }}
 
   .stApp, .stApp p, .stApp label, .stApp h1, .stApp h2, .stApp h3 {{
@@ -133,22 +147,37 @@ THEME = f"""
 
   hr {{ border-color: var(--line) !important; margin: 2.1rem 0 !important; }}
 
-  /* Input: dark field, accent focus ring. */
+  /* Input. Colours come from Streamlit's own theme variables (set in
+     .streamlit/config.toml) rather than literals, so the field cannot end up light
+     while the page is dark -- which is exactly the white-on-white failure that
+     happens when only this stylesheet is dark. */
   [data-testid="stTextInput"] input {{
-    background: rgba(255, 255, 255, 0.035) !important;
+    background: rgba(255, 255, 255, 0.045) !important;
     border: 1px solid var(--line-strong) !important;
     border-radius: 12px !important;
     color: var(--ink) !important;
+    caret-color: {ACCENT};
     padding: 0.72rem 0.9rem !important;
     font-size: 0.97rem !important;
+    -webkit-text-fill-color: var(--ink) !important;
     transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   }}
-  [data-testid="stTextInput"] input::placeholder {{ color: #5D6675 !important; }}
+  [data-testid="stTextInput"] input::placeholder {{
+    color: #7C8595 !important;
+    -webkit-text-fill-color: #7C8595 !important;
+  }}
   [data-testid="stTextInput"] input:focus {{
     outline: none !important;
     border-color: {ACCENT} !important;
-    background: rgba(125, 211, 252, 0.05) !important;
+    background: rgba(125, 211, 252, 0.06) !important;
     box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.14) !important;
+  }}
+
+  /* The label above the field, which the theme sets light but which sits on the
+     card background rather than the page background. */
+  [data-testid="stWidgetLabel"] label,
+  [data-testid="stTextInput"] label {{
+    color: var(--ink) !important;
   }}
 
   /* Buttons. The gradient is on the primary action only; example chips stay flat

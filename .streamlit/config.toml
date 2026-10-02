@@ -1,0 +1,27 @@
+# Streamlit theme. This is the base the app's own stylesheet in `app.py` builds on.
+#
+# Why a config file and not just CSS: Streamlit 1.50 ships with a *light* theme and
+# injects its own background and text colours as CSS variables on the app container.
+# A `background` rule in custom CSS loses to those, so an `app.py`-only dark theme
+# paints the page dark in places while the text input stays white-on-white. Setting
+# the base here makes every native widget agree, and the injected stylesheet then
+# only has to add the parts Streamlit has no token for.
+#
+# The same applies to headless tests: `AppTest` reads this file too, so the widget
+# tree reflects the real theme.
+
+[theme]
+base = "dark"
+primaryColor = "#7DD3FC"
+backgroundColor = "#0A0C10"
+secondaryBackgroundColor = "#12161D"
+textColor = "#E8ECF4"
+font = "sans serif"
+
+[server]
+# 407 chunks load in a couple of seconds on a warm cache, but a cold start on a
+# free-tier box compiles the SentenceTransformer and can outrun the default.
+headless = true
+
+[browser]
+gatherUsageStats = false

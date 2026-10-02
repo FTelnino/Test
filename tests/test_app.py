@@ -180,3 +180,20 @@ def test_sources_expander_lists_evidence(monkeypatch):
     at.text_input[0].set_value("What is the exit load on HDFC Large Cap Fund?")
     at.button[-1].click().run()
     assert at.expander, "FR-14 requires a show-sources expander"
+
+
+def test_the_app_declares_a_dark_base_theme():
+    """The app must not rely on its own stylesheet for the base background.
+
+    Streamlit 1.50 injects its theme as CSS variables on the app container, and a
+    `background` rule in injected CSS loses to those. With no `.streamlit/config.toml`
+    the app served Streamlit's default *light* theme while the input text was set to
+    a near-white, so a typed question was invisible on a white field. The stylesheet
+    alone could not fix that; the base has to be declared in the config.
+    """
+    for option, expected in (
+        ("theme.base", "dark"),
+        ("theme.backgroundColor", "#0A0C10"),
+        ("theme.textColor", "#E8ECF4"),
+    ):
+        assert st.get_option(option) == expected, option

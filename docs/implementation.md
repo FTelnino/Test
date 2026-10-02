@@ -1319,6 +1319,45 @@ section-ranking defect is not marginal — on these pages the factual chunk land
 much the expanded corpus can actually be worth.
 
 ---
+## P21 — Fix the invisible question box (typed text was white-on-white)
+
+Reported symptom: a question typed into the input could not be seen.
+
+Cause, and it was not the colour the report suggested. There was no
+`.streamlit/config.toml`, so Streamlit served its **default light theme** and injected
+that theme as CSS variables on the app container. The P18 stylesheet's `background`
+rules lost to those injected values, so the page was dark in places while the text input
+stayed white. The P18 CSS set the input's text colour to a near-white chosen against the
+*intended* dark background, and the field ended up light text on a light field. Making
+the font dark, as the report suggested, would have papered over the symptom on a theme
+that was never the intent and left the app half dark and half light.
+
+Fixed at the base instead: `.streamlit/config.toml` now declares `base = "dark"` with
+the page colours, so every native widget agrees and the injected stylesheet only has to
+add the parts Streamlit has no token for. The input rules were changed to defer to the
+theme rather than fight it, and the container background is now set on
+`[data-testid="stAppViewContainer"]` as well as `.stApp`, because Streamlit 1.50 paints
+the scroller element and a rule that loses that race leaves a white band.
+
+This is also the first change in this log verified in a real browser rather than
+structurally — driven through the Chrome DevTools protocol to read computed styles, then
+typed into the field the way a user would:
+
+| property | value |
+|---|---|
+| body / app / container background | `rgb(10, 12, 16)` |
+| input text | `rgb(232, 236, 244)` on `rgba(255,255,255,0.043)` |
+| input text, focused | `rgb(232, 236, 244)` on `rgba(125,211,252,0.06)` |
+| typed value + caret | `"What is the expense ratio of HDFC Gilt Fund?"`, offset 44 |
+| chip buttons | all three present |
+
+`test_the_app_declares_a_dark_base_theme` pins the config, because the failure mode is
+silent: the app renders, every test passes, and the text is simply unreadable.
+
+**Gates:** 361 passed, pyflakes clean.
+
+---
+
 ## P20 — Restore the UI example chips (P19 reverted)
 
 P19 removed the three example chips on the reasoning that they named only 2 of the 15
