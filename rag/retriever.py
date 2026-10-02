@@ -45,6 +45,25 @@ _SCHEME_URLS = {source.scheme: source.url for source in load_sources()}
 
 _HDFC_CUE = "hdfc"
 
+# Hyphen, en dash, em dash and the minus sign, all of which appear in scheme names
+# or get typed in place of a space.
+_DASHES = ("-", "\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2212")
+
+
+def _normalise(text: str) -> str:
+    """Lowercase and flatten dashes, so spelling variants match the alias table.
+
+    Scheme names carry hyphens that people do not type and do not need to:
+    "HDFC Mid-Cap Opportunities Fund" versus an alias written "mid cap
+    opportunities". Matching on the raw string silently failed for every
+    hyphenated name, which is exactly the kind of miss that looks like a
+    retrieval-quality problem and is not one.
+    """
+    lowered = text.lower()
+    for dash in _DASHES:
+        lowered = lowered.replace(dash, " ")
+    return lowered
+
 
 def detect_scheme(query: str) -> Optional[str]:
     """The scheme named in `query`, or None.
@@ -64,7 +83,7 @@ def detect_scheme(query: str) -> Optional[str]:
     Returning None is always safe: it widens the candidate set and lets `MIN_SCORE`
     decide, whereas a wrong detection silently narrows it to the wrong fund.
     """
-    lowered = query.lower()
+    lowered = _normalise(query)
     for alias, scheme in _ORDERED_ALIASES:
         if alias not in lowered:
             continue

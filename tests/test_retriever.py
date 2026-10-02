@@ -270,3 +270,54 @@ def test_golden_set_is_well_formed():
         assert entry.get("expected_status") in valid_statuses, entry["question"]
     assert {entry["expected_status"] for entry in entries} == valid_statuses
     assert len(entries) == len({entry["question"] for entry in entries}), "duplicate question"
+
+
+# --- every ingested scheme must be askable by name (P16) ---------------------
+
+def test_every_scheme_source_is_reachable_by_detect_scheme():
+    """A fetched, chunked, indexed page that `detect_scheme` cannot name is a page
+    the user cannot ask about.
+
+    This is the regression that made 10 of the 15 scheme pages return NOT_FOUND on
+    questions their own pages answer. Without a scheme the query gets no metadata
+    filter, so the factual chunk competes against the whole 407-vector collection
+    and typically loses. Nothing else in the suite caught it, because the pages were
+    present and the eval set never named them.
+    """
+    from sources import load_sources
+
+    for source in load_sources():
+        if source.scope == "general":
+            continue
+        detected = retriever.detect_scheme(f"What is the expense ratio of {source.scheme}?")
+        assert detected == source.scheme, (
+            f"{source.scheme!r} is in SOURCES but undetectable by name; "
+            "add it to SCHEME_ALIASES in sources.py"
+        )
+
+
+def test_detect_scheme_ignores_dashes_in_the_query():
+    """Hyphens in scheme names must not decide whether a page is findable."""
+    for spelling in (
+        "HDFC Mid-Cap Opportunities Fund",
+        "HDFC Mid Cap Opportunities Fund",
+        "HDFC Mid\u2011Cap Opportunities Fund",  # non-breaking hyphen
+    ):
+        assert (
+            retriever.detect_scheme(f"expense ratio of {spelling}") == "HDFC Mid-Cap Opportunities Fund"
+        ), spelling
+
+
+def test_new_aliases_do_not_let_another_amc_hijack_a_question():
+    """The P4 guard still holds now that ten more aliases exist.
+
+    Aliases are checked longest-first, so a category alias from a *different* AMC
+    must not resolve to one of the newly added HDFC funds.
+    """
+    for query, expected in (
+        ("What is the expense ratio of Parag Parikh Flexi Cap Fund?", None),
+        ("What is the expense ratio of Mirae Asset Large Cap Fund?", None),
+        ("What is the expense ratio of HDFC Value Fund?", "HDFC Value Fund"),
+        ("What is the expense ratio of HDFC Gilt Fund?", "HDFC Gilt Fund"),
+    ):
+        assert retriever.detect_scheme(query) == expected, query

@@ -146,7 +146,32 @@ GENERAL_SOURCES: List["Source"] = [
     },
 ]
 
+# Every scheme page in SOURCES needs at least its full name here. `detect_scheme`
+# consults only this table, so a scheme that is fetched, chunked and indexed but
+# missing from here is invisible to the retriever: the query gets no scheme filter
+# and the factual chunk competes against all 407 vectors, which is how 10 of the 15
+# pages came back NOT_FOUND on questions their own pages answer. A test asserts the
+# two lists agree, so adding a source without an alias fails the suite instead of
+# shipping a page that silently cannot be asked about.
 SCHEME_ALIASES = {
+    "hdfc mid cap opportunities fund": "HDFC Mid-Cap Opportunities Fund",
+    "mid cap opportunities": "HDFC Mid-Cap Opportunities Fund",
+    "hdfc value fund": "HDFC Value Fund",
+    "hdfc liquid fund": "HDFC Liquid Fund",
+    "hdfc ultra short term fund": "HDFC Ultra Short Term Fund",
+    "ultra short term": "HDFC Ultra Short Term Fund",
+    "hdfc banking and psu debt fund": "HDFC Banking and PSU Debt Fund",
+    "banking and psu debt": "HDFC Banking and PSU Debt Fund",
+    "psu debt": "HDFC Banking and PSU Debt Fund",
+    "hdfc credit risk fund": "HDFC Credit Risk Fund",
+    "credit risk": "HDFC Credit Risk Fund",
+    "hdfc medium term fund": "HDFC Medium Term Fund",
+    "medium term": "HDFC Medium Term Fund",
+    "hdfc gilt fund": "HDFC Gilt Fund",
+    "hdfc nifty midcap 150 index fund": "HDFC Nifty Midcap 150 Index Fund",
+    "nifty midcap 150": "HDFC Nifty Midcap 150 Index Fund",
+    "hdfc nifty 100 index fund": "HDFC Nifty 100 Index Fund",
+    "nifty 100": "HDFC Nifty 100 Index Fund",
     "hdfc balanced advantage fund": "HDFC Balanced Advantage Fund",
     "balanced advantage": "HDFC Balanced Advantage Fund",
     "hdfc elss tax saver fund": "HDFC ELSS Tax Saver Fund",

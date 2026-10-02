@@ -39,7 +39,15 @@ sys.path.insert(0, str(ROOT))
 
 import config  # noqa: E402
 from rag.pipeline import answer  # noqa: E402
-from rag.verifier import ANSWERED, approved_urls  # noqa: E402
+from rag.verifier import (  # noqa: E402
+    ANSWERED,
+    NOT_FOUND,
+    OUT_OF_SCOPE,
+    REFUSED_ADVICE,
+    REFUSED_PII,
+    REFUSED_RETURNS,
+    approved_urls,
+)
 
 OUT_FILE = config.REPORTS_DIR / "eval_results.md"
 
@@ -58,7 +66,78 @@ def load_golden() -> list:
             raise SystemExit(f"{config.GOLDEN_FILE}:{number} is not valid JSON: {exc}")
     if not rows:
         raise SystemExit(f"{config.GOLDEN_FILE} is empty")
+    _validate_schema(rows)
     return rows
+
+
+# Keys check_row() actually reads. A row carrying anything else is almost always a
+# typo, and a typo is the dangerous kind of error here: an unknown assertion key
+# is silently ignored, so the row reports PASS while checking nothing. Better to
+# refuse to run than to print a green table that proves less than it appears to.
+KNOWN_KEYS = {
+    "question",
+    "topic",
+    "kind",
+    "expected_status",
+    "expect_scheme",
+    "must_contain",
+    "forbid",
+    "note",
+    "retrieval_probe",
+}
+
+# status -> the `kind` values that are meaningful for it. Refusals and NOT_FOUND
+# differ in *why* they produce no evidence, and mixing them up is how a row ends
+# up asserting a scheme that retrieval never had a chance to return.
+STATUS_KINDS = {
+    ANSWERED: {"in_corpus"},
+    NOT_FOUND: {"in_corpus", "out_of_corpus"},
+    OUT_OF_SCOPE: {"out_of_scope"},
+    REFUSED_ADVICE: {"advice"},
+    REFUSED_RETURNS: {"returns"},
+    REFUSED_PII: {"pii"},
+}
+
+
+def _validate_schema(rows) -> None:
+    """Reject malformed rows up front rather than half-checking them."""
+    problems = []
+    for n, entry in enumerate(rows, 1):
+        unknown = set(entry) - KNOWN_KEYS
+        if unknown:
+            problems.append(
+                f"row {n} ({entry.get('question', '?')[:40]!r}): "
+                f"unknown key(s) {sorted(unknown)}; allowed is {sorted(KNOWN_KEYS)}"
+            )
+            continue
+        status = entry.get("expected_status")
+        kind = entry.get("kind")
+        if status not in STATUS_KINDS:
+            problems.append(
+                f"row {n} ({entry.get('question', '?')[:40]!r}): "
+                f"expected_status {status!r} is not one of {sorted(STATUS_KINDS)}"
+            )
+        elif kind not in STATUS_KINDS[status]:
+            problems.append(
+                f"row {n} ({entry.get('question', '?')[:40]!r}): kind {kind!r} does not "
+                f"fit status {status!r}; expected one of {sorted(STATUS_KINDS[status])}"
+            )
+        for key in ("must_contain", "forbid"):
+            if key in entry and not isinstance(entry[key], list):
+                problems.append(
+                    f"row {n} ({entry.get('question', '?')[:40]!r}): "
+                    f"{key} must be a list of strings, got {type(entry[key]).__name__}"
+                )
+        if entry.get("retrieval_probe") and kind not in {"in_corpus", "out_of_corpus", "out_of_scope"}:
+            problems.append(
+                f"row {n} ({entry.get('question', '?')[:40]!r}): retrieval_probe is only "
+                "meaningful for in_corpus / out_of_corpus / out_of_scope rows"
+            )
+    if problems:
+        raise SystemExit(
+            f"{config.GOLDEN_FILE} has {len(problems)} malformed row(s):\n  "
+            + "\n  ".join(problems)
+        )
 
 
 def check_row(entry: dict, result) -> tuple[bool, list, str]:
