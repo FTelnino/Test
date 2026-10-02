@@ -693,6 +693,23 @@ chunk count in [`reports/sources.md`](reports/sources.md) and
 `python scripts/gen_sources_report.py` from `sources.py` and the ingest report, so
 they cannot drift from the corpus. Do not hand-edit them.
 
+#	Fund	Link
+1	HDFC Large Cap Fund	https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth (https://groww.in/mutual-funds/hdfc-large-cap-fund-direct-growth)
+2	HDFC Equity Fund	https://groww.in/mutual-funds/hdfc-equity-fund-direct-growth (https://groww.in/mutual-funds/hdfc-equity-fund-direct-growth)
+3	HDFC ELSS Tax Saver Fund	https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth (https://groww.in/mutual-funds/hdfc-elss-tax-saver-fund-direct-plan-growth)
+4	HDFC Small Cap Fund	https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth (https://groww.in/mutual-funds/hdfc-small-cap-fund-direct-growth)
+5	HDFC Balanced Advantage Fund	https://groww.in/mutual-funds/hdfc-balanced-advantage-fund-direct-growth (https://groww.in/mutual-funds/hdfc-balanced-advantage-fund-direct-growth)
+6	HDFC Mid-Cap Opportunities Fund	https://groww.in/mutual-funds/hdfc-mid-cap-opportunities-fund-direct-growth (https://groww.in/mutual-funds/hdfc-mid-cap-opportunities-fund-direct-growth)
+7	HDFC Value Fund	https://groww.in/mutual-funds/hdfc-value-fund-direct-plan-growth (https://groww.in/mutual-funds/hdfc-value-fund-direct-plan-growth)
+8	HDFC Liquid Fund	https://groww.in/mutual-funds/hdfc-liquid-fund-direct-growth (https://groww.in/mutual-funds/hdfc-liquid-fund-direct-growth)
+9	HDFC Ultra Short Term Fund	https://groww.in/mutual-funds/hdfc-ultra-short-term-fund-direct-growth (https://groww.in/mutual-funds/hdfc-ultra-short-term-fund-direct-growth)
+10	HDFC Banking and PSU Debt Fund	https://groww.in/mutual-funds/hdfc-banking-and-psu-debt-fund-direct-growth (https://groww.in/mutual-funds/hdfc-banking-and-psu-debt-fund-direct-growth)
+11	HDFC Credit Risk Fund	https://groww.in/mutual-funds/hdfc-credit-risk-fund-direct-growth (https://groww.in/mutual-funds/hdfc-credit-risk-fund-direct-growth)
+12	HDFC Medium Term Fund	https://groww.in/mutual-funds/hdfc-medium-term-fund-direct-growth (https://groww.in/mutual-funds/hdfc-medium-term-fund-direct-growth)
+13	HDFC Gilt Fund	https://groww.in/mutual-funds/hdfc-gilt-fund-direct-growth (https://groww.in/mutual-funds/hdfc-gilt-fund-direct-growth)
+14	HDFC Nifty Midcap 150 Index Fund	https://groww.in/mutual-funds/hdfc-nifty-midcap-150-index-fund-direct-growth (https://groww.in/mutual-funds/hdfc-nifty-midcap-150-index-fund-direct-growth)
+15	HDFC Nifty 100 Index Fund	https://groww.in/mutual-funds/hdfc-nifty-100-index-fund-direct-growth (https://groww.in/mutual-funds/hdfc-nifty-100-index-fund-direct-growth)
+
 - 15 scheme pages on **groww.in** (Direct-Growth plans, as assigned)
 - 2 pages on **amfiindia.com**, the mutual fund regulator association, added
   because the Groww pages omit the ELSS lock-in, the riskometer scale, and
